@@ -6,14 +6,13 @@ import za.co.entelect.challenge.enums.CellType;
 import za.co.entelect.challenge.enums.Direction;
 import za.co.entelect.challenge.enums.PowerUpType;
 
-
 import java.util.*;
 import java.util.stream.Collectors;
 // import java.util.stream.Node;
 
+import jdk.nashorn.internal.ir.ReturnNode;
 
 public class Bot {
-
     private Random random;
     private GameState gameState;
     private Opponent opponent;
@@ -39,13 +38,12 @@ public class Bot {
             i++;
         }
         if(sirsak.get(0).parent == null){
-            return 1;
+            return 0;
         }
-        return i;
+        return i-1;
     }
 
     public Command run() {
-
 //         Worm enemyWorm = getFirstWormInRange();
 //         if (enemyWorm != null) {
 //             Direction direction = resolveDirection(currentWorm.position, enemyWorm.position);
@@ -55,21 +53,16 @@ public class Bot {
 //        List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
 //        int cellIdx =  random.nextInt(surroundingBlocks.size());
 //         Cell block = surroundingBlocks.get(cellIdx);
-// //
         
         Cell[][] map = gameState.map;
 //        PrintGraph(MapstoGraph(map)); // ALGORITMA MENGUBAH PETA JADI MATRIKS
         int [][] matrixmap = MapstoGraph(map);
         Pickup nearestpowup = powerUpTerdekat(map); 
-        // System.out.println(currentWorm.position.x);
-        // System.out.println(currentWorm.position.y);
-        // System.out.println(nearestpowup.x);
-        // System.out.println(nearestpowup.y);
         ArrayList<Node> apel = pathfinding(matrixmap,currentWorm.position.x,
                                currentWorm.position.y,nearestpowup.x,nearestpowup.y);
         // PrintGraph(matrixmap);
 
-        int lennn = cariParent(apel)-1;
+        int lennn = cariParent(apel);
         // System.out.println(currentWorm.position.x);
         // System.out.println(currentWorm.position.y);
         // System.out.println(apel.get(lennn).x);
@@ -77,146 +70,102 @@ public class Bot {
         // System.out.println(nearestpowup.x);
         // System.out.println(nearestpowup.y);
         // System.out.println(matrixmap[apel.get(lennn).y][apel.get(lennn).x]);
-        if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
+        if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1 && unoccupied(gameState)) {
+            // tambahin kalo occupied ngapain
             return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
         } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
             return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
         }
-        // System.out.println(apel.get(1).x);
-        // System.out.println(apel.get(1).y);
-
         return new DoNothingCommand();
     }
 
-    private void PrintGraph(int[][] nangka){
-        for (int i = 0; i < 33; i++) {
-            for (int j = 0; j < 33; j++) {
-                System.out.print(nangka[i][j]);
-                if (j==32){
-                    System.out.println();
+    // private void PrintGraph(int[][] nangka){
+    //     for (int i = 0; i < 33; i++) {
+    //         for (int j = 0; j < 33; j++) {
+    //             System.out.print(nangka[i][j]);
+    //             if (j==32){
+    //                 System.out.println();
+    //             }
+    //         }
+    //     }
+    // }
+
+    private boolean unoccupied(GameState gameState){
+        // kalo worm nya mati, positionnya tetep kah?, kalo iya cek health==0
+        // TODO: benerin
+        int i,j;
+        for(j=0; j<gameState.opponents.length; j++){
+            for(i=0; i<3; i++){
+                if(getCurrentWorm(gameState).position == gameState.opponents[j].worms[i].position
+                    && gameState.opponents[j].worms[i].health != 0){
+                    return false;
                 }
             }
         }
+        for(i=0; i<3; i++){
+            if(getCurrentWorm(gameState).position == gameState.myPlayer.worms[i].position
+                && getCurrentWorm(gameState).id != (i+1)
+                && gameState.opponents[j].worms[i].health != 0){
+                return false;
+            }
+        }
+        return true;
     }
 
     private ArrayList<Node> pathfinding(int[][] peta,int x,int y, int xend, int yend){
         Alamatpath jalan = new Alamatpath(x,y,xend,yend,33);
-//        jalan.start = new Node(x,y);
-//        jalan.end = new Node (xend,yend);
-//        jalan.penyimpananjalan = new Node[33][33];
         // INISIASI VALUE DARI PETA MATRIX PADA NODE
-        for (int i = 0; i < 33; i++){
-            for (int j = 0; j < 33; j++){
+        for (int i = 0; i < 33; i++)
+            for (int j = 0; j < 33; j++)
                 jalan.penyimpananjalan[i][j].ubahNilai(peta[i][j]);
-            }
-        }
 
         jalan.start.jarak = 0; 
         Comparator<Node> adjacencyComparator = (left, right) -> {
-            if (left.jarak > right.jarak) {
-                return 1;
-            }
-                return -1;
-            };
+            if (left.jarak > right.jarak) return 1;
+            return -1;
+        };
 
         Queue<Node> queuejalan = new PriorityQueue(33, adjacencyComparator);
-
         queuejalan.add(jalan.start);
 
         while (queuejalan.size() > 0){
             Node pinpoint = queuejalan.remove();
-            Node check;
-
             // ALGORITMA UNTUK MENGECEK PERJALANAN KE 8 ARAH
             if (pinpoint.y - 1 >= 0){
-                // UP UP
-                check = jalan.penyimpananjalan[pinpoint.x][pinpoint.y-1];
-                if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
-                    check.jarak = pinpoint.jarak + check.value;
-                    check.parent = pinpoint;
-                    queuejalan.add(check);
-                }
-                // UP RIGHT MASAK AER
-                if (pinpoint.x + 1 < 33){
-                    check = jalan.penyimpananjalan[pinpoint.x + 1][pinpoint.y - 1];
-                    if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
-                        check.jarak = pinpoint.jarak + check.value;
-                        check.parent = pinpoint;
-                        queuejalan.add(check);
-                    }    
-                }
-            
-                // UP LEFT BIAR MATENG, cakep
-                if (pinpoint.x - 1 >= 0){
-                    check = jalan.penyimpananjalan[pinpoint.x - 1][pinpoint.y - 1];
-                    if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
-                        check.jarak = pinpoint.jarak + check.value;
-                        check.parent = pinpoint;
-                        queuejalan.add(check);
-                    }                   
-                }
+                queuejalan = helper(jalan, 0, -1, pinpoint, queuejalan); // UP
+                if (pinpoint.x + 1 < 33) queuejalan = helper(jalan, 1, -1, pinpoint, queuejalan); // RIGHT
+                if (pinpoint.x - 1 >= 0) queuejalan = helper(jalan, -1, -1, pinpoint, queuejalan); // LEFT
             }
-            if (pinpoint.y + 1 < 33){
-                // DOWN DOWN
-                check = jalan.penyimpananjalan[pinpoint.x][pinpoint.y + 1];
-                if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
-                    check.jarak = pinpoint.jarak + check.value;
-                    check.parent = pinpoint;
-                    queuejalan.add(check);
-                    }
-                
-                // DOWN RIGHT
-                if (pinpoint.x - 1 >= 0){
-                    check = jalan.penyimpananjalan[pinpoint.x - 1][pinpoint.y + 1];
-                    if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
-                        check.jarak = pinpoint.jarak + check.value;
-                        check.parent = pinpoint;
-                        queuejalan.add(check);
-                    } 
-                }
-                // DOWN LEFT
-                if (pinpoint.x + 1 < 33){
-                    check = jalan.penyimpananjalan[pinpoint.x + 1][pinpoint.y + 1];
-                    if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
-                        check.jarak = pinpoint.jarak + check.value;
-                        check.parent = pinpoint;
-                        queuejalan.add(check);
-                    } 
-                }
+            if (pinpoint.y + 1 < 33){ // DOWN
+                queuejalan = helper(jalan, 0, 1, pinpoint, queuejalan); // DOWN
+                if (pinpoint.x + 1 < 33) queuejalan = helper(jalan, 1, 1, pinpoint, queuejalan); // RIGHT
+                if (pinpoint.x - 1 >= 0) queuejalan = helper(jalan, -1, 1, pinpoint, queuejalan); // LEFT
             }
-            // LEFT
-            if (pinpoint.x - 1 > 0){
-                check = jalan.penyimpananjalan[pinpoint.x -1][pinpoint.y];
-                if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
-                    check.jarak = pinpoint.jarak + check.value;
-                    check.parent = pinpoint;
-                    queuejalan.add(check);
-                }     
-            }
-            // RIGHT
-            if (pinpoint.x + 1 < 33){
-                check = jalan.penyimpananjalan[pinpoint.x + 1][pinpoint.y];
-                if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
-                    check.jarak = pinpoint.jarak + check.value;
-                    check.parent = pinpoint;
-                    queuejalan.add(check);
-                }     
-            }
+            if (pinpoint.x + 1 < 33) queuejalan = helper(jalan, 1, 0, pinpoint, queuejalan); // RIGHT
+            if (pinpoint.x - 1 >= 0) queuejalan = helper(jalan, -1, 0, pinpoint, queuejalan); // LEFT
             pinpoint.visited = true;
         }
-        ArrayList<Node> path = new ArrayList<>();
 
-        // Checking if a path exists
-        if (!(jalan.penyimpananjalan[jalan.end.x][jalan.end.y].jarak == Integer.MAX_VALUE)) {
-            //Trace back the path
+        ArrayList<Node> path = new ArrayList<>();
+        if (jalan.penyimpananjalan[jalan.end.x][jalan.end.y].jarak != Integer.MAX_VALUE) {
             Node current = jalan.penyimpananjalan[jalan.end.x][jalan.end.y];
-        
             while (current.parent != null) {
                 path.add(current.parent);
                 current = current.parent;
             }
-        } else System.out.println("Noible path");
+        }
         return path;
+    }
+
+    private Queue<Node> helper(Alamatpath jalan, int x, int y, Node pinpoint, Queue<Node> queuejalan){
+        Queue<Node> kiuw = queuejalan;
+        Node check = jalan.penyimpananjalan[pinpoint.x + x][pinpoint.y + y];
+        if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
+            check.jarak = pinpoint.jarak + check.value;
+            check.parent = pinpoint;
+            kiuw.add(check);
+        }
+        return kiuw;
     }
 
     private Pickup powerUpTerdekat(Cell[][] peta){
@@ -247,15 +196,9 @@ public class Bot {
         for (int i = 0; i < 33; i++) {
             for (int j = 0; j < 33; j++) {
                 // Don't include the current position
-                if (apel[i][j].type == CellType.DIRT){
-                    graf[i][j] = 2;
-                }
-                else if (apel[i][j].type == CellType.AIR){
-                    graf[i][j] = 1;
-                }
-                else {
-                    graf[i][j]= 0;
-                }
+                if (apel[i][j].type == CellType.DIRT) graf[i][j] = 2;
+                else if (apel[i][j].type == CellType.AIR) graf[i][j] = 1;
+                else graf[i][j]= 0;
             }
         }
         return graf;
@@ -316,7 +259,6 @@ public class Bot {
             }
             directionLines.add(directionLine);
         }
-
         return directionLines;
     }
 
@@ -330,7 +272,6 @@ public class Bot {
                 }
             }
         }
-
         return cells;
     }
 
