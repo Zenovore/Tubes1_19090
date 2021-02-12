@@ -38,6 +38,9 @@ public class Bot {
         while(sirsak.get(i).parent != null) {
             i++;
         }
+        if(sirsak.get(0).parent == null){
+            return 1;
+        }
         return i;
     }
 
@@ -64,19 +67,19 @@ public class Bot {
         // System.out.println(nearestpowup.y);
         ArrayList<Node> apel = pathfinding(matrixmap,currentWorm.position.x,
                                currentWorm.position.y,nearestpowup.x,nearestpowup.y);
-        PrintGraph(matrixmap);
+        // PrintGraph(matrixmap);
 
         int lennn = cariParent(apel)-1;
-        System.out.println(currentWorm.position.x);
-        System.out.println(currentWorm.position.y);
-        System.out.println(apel.get(lennn).x);
-        System.out.println(apel.get(lennn).y);
+        // System.out.println(currentWorm.position.x);
+        // System.out.println(currentWorm.position.y);
+        // System.out.println(apel.get(lennn).x);
+        // System.out.println(apel.get(lennn).y);
         // System.out.println(nearestpowup.x);
         // System.out.println(nearestpowup.y);
-        System.out.println(matrixmap[apel.get(lennn).x][apel.get(lennn).y]);
-        if (matrixmap[apel.get(lennn).x][apel.get(lennn).y] == 1) {
+        // System.out.println(matrixmap[apel.get(lennn).y][apel.get(lennn).x]);
+        if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
             return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
-        } else if (matrixmap[apel.get(lennn).x][apel.get(lennn).y] == 2) {
+        } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
             return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
         }
         // System.out.println(apel.get(1).x);
