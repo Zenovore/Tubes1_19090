@@ -33,6 +33,14 @@ public class Bot {
                 .get();
     }
 
+    private int cariParent(ArrayList<Node> sirsak){
+        int i = 0;
+        while(sirsak.get(i).parent != null) {
+            i++;
+        }
+        return i;
+    }
+
     public Command run() {
 
 //         Worm enemyWorm = getFirstWormInRange();
@@ -44,13 +52,7 @@ public class Bot {
 //        List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
 //        int cellIdx =  random.nextInt(surroundingBlocks.size());
 //         Cell block = surroundingBlocks.get(cellIdx);
-//         if (block.type == CellType.AIR) {
-//             return new MoveCommand(block.x, block.y);
-//         } else if (block.type == CellType.DIRT) {
-//             return new DigCommand(block.x, block.y);
-//         }
 // //
-//         return new DoNothingCommand();
         
         Cell[][] map = gameState.map;
 //        PrintGraph(MapstoGraph(map)); // ALGORITMA MENGUBAH PETA JADI MATRIKS
@@ -60,11 +62,25 @@ public class Bot {
         // System.out.println(currentWorm.position.y);
         // System.out.println(nearestpowup.x);
         // System.out.println(nearestpowup.y);
-        ArrayList<Node> apel = pathfinding(matrixmap,currentWorm.position.x,currentWorm.position.y,nearestpowup.x,nearestpowup.y);
-       System.out.println(apel.get(0).x);
-       System.out.println(apel.get(0).y);
-       System.out.println(apel.get(1).x);
-       System.out.println(apel.get(1).y);
+        ArrayList<Node> apel = pathfinding(matrixmap,currentWorm.position.x,
+                               currentWorm.position.y,nearestpowup.x,nearestpowup.y);
+        PrintGraph(matrixmap);
+
+        int lennn = cariParent(apel)-1;
+        System.out.println(currentWorm.position.x);
+        System.out.println(currentWorm.position.y);
+        System.out.println(apel.get(lennn).x);
+        System.out.println(apel.get(lennn).y);
+        // System.out.println(nearestpowup.x);
+        // System.out.println(nearestpowup.y);
+        System.out.println(matrixmap[apel.get(lennn).x][apel.get(lennn).y]);
+        if (matrixmap[apel.get(lennn).x][apel.get(lennn).y] == 1) {
+            return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
+        } else if (matrixmap[apel.get(lennn).x][apel.get(lennn).y] == 2) {
+            return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
+        }
+        // System.out.println(apel.get(1).x);
+        // System.out.println(apel.get(1).y);
 
         return new DoNothingCommand();
     }
@@ -94,7 +110,7 @@ public class Bot {
 
         jalan.start.jarak = 0; 
         Comparator<Node> adjacencyComparator = (left, right) -> {
-            if (left.jarak > (right.jarak)) {
+            if (left.jarak > right.jarak) {
                 return 1;
             }
                 return -1;
@@ -104,7 +120,7 @@ public class Bot {
 
         queuejalan.add(jalan.start);
 
-        while (queuejalan.size() > 0){  // while(true) maybe
+        while (queuejalan.size() > 0){
             Node pinpoint = queuejalan.remove();
             Node check;
 
@@ -228,14 +244,14 @@ public class Bot {
         for (int i = 0; i < 33; i++) {
             for (int j = 0; j < 33; j++) {
                 // Don't include the current position
-                if (apel[j][i].type == CellType.DIRT){
-                    graf[j][i] = 2;
+                if (apel[i][j].type == CellType.DIRT){
+                    graf[i][j] = 2;
                 }
-                else if (apel[j][i].type == CellType.AIR){
-                    graf[j][i] = 1;
+                else if (apel[i][j].type == CellType.AIR){
+                    graf[i][j] = 1;
                 }
                 else {
-                    graf[j][i] = 0;
+                    graf[i][j]= 0;
                 }
             }
         }
@@ -252,12 +268,10 @@ public class Bot {
                 }
             }
         }
-
         return cells;
     }
 
     private Worm getFirstWormInRange() {
-
         Set<String> cells = constructFireDirectionLines(currentWorm.weapon.range)
                 .stream()
                 .flatMap(Collection::stream)
@@ -270,7 +284,6 @@ public class Bot {
                 return enemyWorm;
             }
         }
-
         return null;
     }
 
