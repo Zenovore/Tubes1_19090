@@ -8,9 +8,6 @@ import za.co.entelect.challenge.enums.PowerUpType;
 
 import java.util.*;
 import java.util.stream.Collectors;
-// import java.util.stream.Node;
-
-import jdk.nashorn.internal.ir.ReturnNode;
 
 public class Bot {
     private Random random;
@@ -44,11 +41,11 @@ public class Bot {
     }
 
     public Command run() {
-//         Worm enemyWorm = getFirstWormInRange();
-//         if (enemyWorm != null) {
-//             Direction direction = resolveDirection(currentWorm.position, enemyWorm.position);
-//             return new ShootCommand(direction);
-//         }
+        // Worm enemyWorm = getFirstWormInRange();
+        // if (enemyWorm != null) {
+        //     Direction direction = resolveDirection(currentWorm.position, enemyWorm.position);
+        //     return new ShootCommand(direction);
+        // }
 // //
 //        List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
 //        int cellIdx =  random.nextInt(surroundingBlocks.size());
@@ -56,13 +53,28 @@ public class Bot {
         
         Cell[][] map = gameState.map;
 //        PrintGraph(MapstoGraph(map)); // ALGORITMA MENGUBAH PETA JADI MATRIKS
-        int [][] matrixmap = MapstoGraph(map);
-        Pickup nearestpowup = powerUpTerdekat(map); 
-        ArrayList<Node> apel = pathfinding(matrixmap,currentWorm.position.x,
-                               currentWorm.position.y,nearestpowup.x,nearestpowup.y);
+        int[][] matrixmap = mapsToGraph(map);
+        Pickup nearestpowup = powerUpTerdekat(map);
+        // Ambil powerup
+        if(nearestpowup != null){
+            // TODO: belom ke pickup
+            // mungkin kalo masih full health jangan diambil
+            ArrayList<Node> apel = pathFinding(matrixmap,currentWorm.position.x,
+                                   currentWorm.position.y,nearestpowup.x,nearestpowup.y);
+
+            int lennn = cariParent(apel);
+            if(matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1
+                && unoccupied(apel.get(lennn).x, apel.get(lennn).y, gameState)) {
+                return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
+            // tambahin kalo occupied ngapain
+            } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
+                return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
+            }
+        } else {
+            // Bertahan
+        }
         // PrintGraph(matrixmap);
 
-        int lennn = cariParent(apel);
         // System.out.println(currentWorm.position.x);
         // System.out.println(currentWorm.position.y);
         // System.out.println(apel.get(lennn).x);
@@ -70,49 +82,43 @@ public class Bot {
         // System.out.println(nearestpowup.x);
         // System.out.println(nearestpowup.y);
         // System.out.println(matrixmap[apel.get(lennn).y][apel.get(lennn).x]);
-        if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1 && unoccupied(gameState)) {
-            // tambahin kalo occupied ngapain
-            return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
-        } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
-            return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
-        }
         return new DoNothingCommand();
     }
 
-    // private void PrintGraph(int[][] nangka){
-    //     for (int i = 0; i < 33; i++) {
-    //         for (int j = 0; j < 33; j++) {
-    //             System.out.print(nangka[i][j]);
-    //             if (j==32){
-    //                 System.out.println();
-    //             }
-    //         }
-    //     }
-    // }
+    private void PrintGraph(int[][] nangka){
+        for (int i = 0; i < 33; i++) {
+            for (int j = 0; j < 33; j++) {
+                System.out.print(nangka[i][j]);
+                if (j==32){
+                    System.out.println();
+                }
+            }
+        }
+    }
 
-    private boolean unoccupied(GameState gameState){
+    private boolean unoccupied(int x, int y, GameState gameState){
         // kalo worm nya mati, positionnya tetep kah?, kalo iya cek health==0
-        // TODO: benerin
         int i,j;
         for(j=0; j<gameState.opponents.length; j++){
             for(i=0; i<3; i++){
-                if(getCurrentWorm(gameState).position == gameState.opponents[j].worms[i].position
+                if(x == gameState.opponents[j].worms[i].position.x
+                    && y == gameState.opponents[j].worms[i].position.y
                     && gameState.opponents[j].worms[i].health != 0){
                     return false;
                 }
             }
         }
         for(i=0; i<3; i++){
-            if(getCurrentWorm(gameState).position == gameState.myPlayer.worms[i].position
-                && getCurrentWorm(gameState).id != (i+1)
-                && gameState.opponents[j].worms[i].health != 0){
+            if(x == gameState.myPlayer.worms[i].position.x
+                && y == gameState.myPlayer.worms[i].position.y
+                && gameState.myPlayer.worms[i].health != 0){
                 return false;
             }
         }
         return true;
     }
 
-    private ArrayList<Node> pathfinding(int[][] peta,int x,int y, int xend, int yend){
+    private ArrayList<Node> pathFinding(int[][] peta, int x, int y, int xend, int yend){
         Alamatpath jalan = new Alamatpath(x,y,xend,yend,33);
         // INISIASI VALUE DARI PETA MATRIX PADA NODE
         for (int i = 0; i < 33; i++)
@@ -170,8 +176,6 @@ public class Bot {
 
     private Pickup powerUpTerdekat(Cell[][] peta){
         Pickup lokasiPowerup = new Pickup();
-        lokasiPowerup.x = -1;
-        lokasiPowerup.y = -1;
         int distance = 99;
         for (int i = 0; i < 33; i++) {
             for (int j = 0; j < 33; j++) {
@@ -180,18 +184,19 @@ public class Bot {
                         distance = getDiagonalDistance(currentWorm.position.x, currentWorm.position.y, i, j);
                         lokasiPowerup.x = i;
                         lokasiPowerup.y = j;
+                        return lokasiPowerup;
                     }
                 }
             }
         }
-        return lokasiPowerup;
+        return null;
     }
 
     private int getDiagonalDistance(int x,int y,int x1, int y1){
         return Math.max(Math.abs(x-x1),Math.abs(y-y1));
     }
 
-    private int[][] MapstoGraph(Cell[][] apel){
+    private int[][] mapsToGraph(Cell[][] apel){
         int graf[][] = new int [33][33];
         for (int i = 0; i < 33; i++) {
             for (int j = 0; j < 33; j++) {
