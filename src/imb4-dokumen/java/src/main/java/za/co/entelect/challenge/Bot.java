@@ -252,8 +252,10 @@ public class Bot {
         return cells;
     }
 
-    private Worm getFirstWormInRange() {
-        Set<String> cells = constructFireDirectionLines(currentWorm.weapon.range)
+
+
+    private Worm getFirstWormInRange(int range) {
+        Set<String> cells = constructFireDirectionLines(range)
                 .stream()
                 .flatMap(Collection::stream)
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
@@ -261,7 +263,7 @@ public class Bot {
 
         for (Worm enemyWorm : opponent.worms) {
             String enemyPosition = String.format("%d_%d", enemyWorm.position.x, enemyWorm.position.y);
-            if (cells.contains(enemyPosition)) {
+            if (cells.contains(enemyPosition) && enemyWorm.health > 0) {
                 return enemyWorm;
             }
         }
@@ -279,13 +281,22 @@ public class Bot {
         return locTarget; 
     }
 
+
+
     private Command huntByID_c(int n) {
         int[][] matrixmap = mapsToGraph();
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
         boolean canAttack = false; //dijadiin var global??
+        boolean isFriendlyFire = false;
 
-        Set<String> cells = constructFireDirectionLines(currentWorm.weapon.range)
+        Worm opp = getFirstWormInRange(3);
+        if (opp != null && opp.id != n) {
+            Direction shootdir = resolveDirection(currentWorm.position, opp.position);
+            return new ShootCommand(shootdir);
+        }
+
+        Set<String> cells = constructFireDirectionLines(3)
                 .stream()
                 .flatMap(Collection::stream)
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
@@ -293,9 +304,21 @@ public class Bot {
 
         if (cells.contains(oppPosition)) {
             canAttack = true;
+
         }
 
-        if (canAttack == false) {
+        for (int i=0;i<3;i++){
+            String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
+            if(cells.contains(myPos)){
+                isFriendlyFire = true;
+                break;
+            }
+        }
+        if (!isFriendlyFire && canAttack){
+            Direction shootdir = resolveDirection(currentWorm.position, locTarget);
+            return new ShootCommand(shootdir);            
+        }
+        else{
             ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
                     currentWorm.position.y, locTarget.x, locTarget.y);
             int lennn = cariParent(apel);
@@ -306,9 +329,6 @@ public class Bot {
             } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
                 return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
             }
-        } else {
-            Direction shootdir = resolveDirection(currentWorm.position, locTarget);
-            return new ShootCommand(shootdir);
         }
         return new DoNothingCommand();
     }
@@ -319,8 +339,16 @@ public class Bot {
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
         boolean canAttack = false; //dijadiin var global??
         boolean canBananaBomb = false;
+        boolean isFriendlyFire = false;
+        boolean isFriendlyFireB = false;
 
-        Set<String> cells = constructFireDirectionLines(currentWorm.weapon.range)
+        Worm opp = getFirstWormInRange(3);
+        if (opp != null && opp.id != n){
+            Direction shootdir = resolveDirection(currentWorm.position, opp.position);
+            return new ShootCommand(shootdir);
+        }
+
+        Set<String> cells = constructFireDirectionLines(3)
                 .stream()
                 .flatMap(Collection::stream)
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
@@ -337,26 +365,40 @@ public class Bot {
         if (cellsB.contains(oppPosition) && currentWorm.banana.count > 0 
             && isBananaBomb[n-1] == false) canBananaBomb= true;
 
-        if (canAttack == false && canBananaBomb==false) {
-            ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
-                    currentWorm.position.y, locTarget.x, locTarget.y);
-            int lennn = cariParent(apel);
-            if(matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1
-                && unoccupied(apel.get(lennn).x, apel.get(lennn).y)) {
-                return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
-            // tambahin kalo occupied ngapain
-            } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
-                return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
+        for (int i=0;i<3;i++){
+            String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
+            if(cells.contains(myPos)){
+                isFriendlyFire = true;
+                break;
             }
         }
-        else if (canBananaBomb == true){
+
+        for (int i=0;i<3;i++){
+            String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
+            if(cellsB.contains(myPos)){
+                isFriendlyFireB = true;
+                break;
+            }
+        }
+
+        if (canBananaBomb == true && isFriendlyFireB == false){
             Position target = getWormLocationByID(n);
             isBananaBomb[n-1] = true;
             return new BananaBombCommand(target.x,target.y);
         }
-        else if (canAttack == true){
+        else if (canAttack == true && canBananaBomb == false && isFriendlyFire == false){
             Direction shootdir = resolveDirection(currentWorm.position, locTarget);
             return new ShootCommand(shootdir);
+        }
+        else{
+            ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
+                    currentWorm.position.y, locTarget.x, locTarget.y);
+            int lennn = cariParent(apel);
+            if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
+                return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
+            } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
+                return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
+            }
         }
         return new DoNothingCommand();
     }
@@ -366,15 +408,23 @@ public class Bot {
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
         boolean canAttack = false; //dijadiin var global??
+        boolean isFriendlyFire = false;
+        boolean isFriendlyFireS = false;
         boolean canSnowBall = false;
 
-        Set<String> cells = constructFireDirectionLines(currentWorm.weapon.range)
+        Worm opp = getFirstWormInRange(3);
+        if (opp != null && opp.id != n){
+            Direction shootdir = resolveDirection(currentWorm.position, opp.position);
+            return new ShootCommand(shootdir);
+        }
+
+        Set<String> cells = constructFireDirectionLines(3)
                 .stream()
                 .flatMap(Collection::stream)
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
                 .collect(Collectors.toSet());
 
-        Set<String> cellsB = constructFireDirectionLines(5)
+        Set<String> cellsS = constructFireDirectionLines(5)
                 .stream()
                 .flatMap(Collection::stream)
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
@@ -382,10 +432,34 @@ public class Bot {
 
         if (cells.contains(oppPosition)) canAttack = true;
 
-        if (cellsB.contains(oppPosition) && currentWorm.snow.count > 0
+        for (int i=0;i<3;i++){
+            String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
+            if(cells.contains(myPos)){
+                isFriendlyFire = true;
+                break;
+            }
+        }
+
+        for (int i=0;i<3;i++){
+            String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
+            if(cellsS.contains(myPos)){
+                isFriendlyFireS = true;
+                break;
+            }
+        }
+        if (cellsS.contains(oppPosition) && currentWorm.snow.count > 0
             && isSnowBall[n-1] == false) canSnowBall= true;
 
-        if (canAttack == false && canSnowBall==false) {
+        if (canSnowBall == true && isFriendlyFireS == false){
+            Position target = getWormLocationByID(n);
+            isSnowBall[n-1] = true;
+            return new SnowballCommand(target.x,target.y);
+        }
+        else if (canAttack == true && canSnowBall == false && isFriendlyFire==false){
+            Direction shootdir = resolveDirection(currentWorm.position, locTarget);
+            return new ShootCommand(shootdir);
+        }
+        else{
             ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
                     currentWorm.position.y, locTarget.x, locTarget.y);
             int lennn = cariParent(apel);
@@ -396,15 +470,6 @@ public class Bot {
             } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
                 return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
             }
-        }
-        else if (canSnowBall == true){
-            Position target = getWormLocationByID(n);
-            isSnowBall[n-1] = true;
-            return new SnowballCommand(target.x,target.y);
-        }
-        else if (canAttack == true){
-            Direction shootdir = resolveDirection(currentWorm.position, locTarget);
-            return new ShootCommand(shootdir);
         }
         return new DoNothingCommand();
     }
