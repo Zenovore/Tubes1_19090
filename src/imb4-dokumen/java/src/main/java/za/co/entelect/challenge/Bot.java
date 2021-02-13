@@ -39,12 +39,8 @@ public class Bot {
 
     private int cariParent(ArrayList<Node> sirsak){
         int i = 0;
-        while(sirsak.get(i).parent != null) {
-            i++;
-        }
-        if(sirsak.get(0).parent == null){
-            return 0;
-        }
+        while(sirsak.get(i).parent != null) i++;
+        if(sirsak.get(0).parent == null) return 0;
         return i-1;
     }
 
@@ -55,47 +51,66 @@ public class Bot {
         //     return new ShootCommand(direction);
         // }
         
-        //    List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
-        //    int cellIdx =  random.nextInt(surroundingBlocks.size());
-        //    Cell block = surroundingBlocks.get(cellIdx);
-        
-        Cell[][] map = gameState.map;
-        int[][] matrixmap = mapsToGraph(map);
-        Pickup nearestpowup = powerUpTerdekat(map);
-        // Ambil powerup
-        // if(nearestpowup != null){
-        //     // mungkin kalo masih full health jangan diambil
-        //     ArrayList<Node> apel = pathFinding(matrixmap,currentWorm.position.x,
-        //                            currentWorm.position.y,nearestpowup.x,nearestpowup.y);
-        
-        //     int lennn = cariParent(apel);
-        //     if(matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1
-        //         && unoccupied(apel.get(lennn).x, apel.get(lennn).y, gameState)) {
-        //         return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
-        //     // tambahin kalo occupied ngapain
-        //     } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
-        //         return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
-        //     }
-        //     return new DoNothingCommand();
-        // } else {
-            if(opponent.worms[1].health > 0){
-                if(currentWorm.prof == Profession.COMMANDO) return huntByID_c(2);
-                else if (currentWorm.prof == Profession.AGENT) return huntByID_a(2);
-                else if (currentWorm.prof == Profession.TECHNOLOGIST) return huntByID_t(2);
-            }
-            else if (opponent.worms[2].health > 0){
-                if(currentWorm.prof == Profession.COMMANDO) return huntByID_c(3);
-                else if (currentWorm.prof == Profession.AGENT) return huntByID_a(3);
-                else if (currentWorm.prof == Profession.TECHNOLOGIST) return huntByID_t(3);
-            }
-            else if (opponent.worms[0].health > 0){
-                if(currentWorm.prof == Profession.COMMANDO) return huntByID_c(1);
-                else if (currentWorm.prof == Profession.AGENT) return huntByID_a(1);
-                else if (currentWorm.prof == Profession.TECHNOLOGIST) return huntByID_t(1);
-            }
-        // }
+        // BATASAN HP CACING
+        if (getCurrentWorm(gameState).health <= getCurrentWorm(gameState).initHP - 50){
+            cariHelthPek();
+        } else {
+            serang();
+        }
         return new DoNothingCommand();
     }
+    
+    private Command helpeh(int i) {
+        if(currentWorm.prof == Profession.COMMANDO) return huntByID_c(i+1);
+        else if (currentWorm.prof == Profession.AGENT) return huntByID_a(i+1);
+        else if (currentWorm.prof == Profession.TECHNOLOGIST) return huntByID_t(i+1);
+        return new DoNothingCommand();
+    }
+    
+    private Command serang(){
+        if (opponent.worms[1].health > 0) return helpeh(1);
+        else if (opponent.worms[2].health > 0) return helpeh(2);
+        else if (opponent.worms[0].health > 0) return helpeh(0);
+        return new DoNothingCommand();
+    }
+    
+    private Command cariHelthPek(){
+        int[][] matrixmap = mapsToGraph();
+        Pickup nearestpowup = powerUpTerdekat();
+        // Ambil powerup
+        List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
+        // int cellIdx = cekPowerUpSekitar(surroundingBlocks);
+        if (2 != 99){
+            // Cell pickuplocation = surroundingBlocks.get(cellIdx);
+            // if(getCurrentWorm(gameState).health <= getCurrentWorm(gameState).initHP - 10){
+            //     return new MoveCommand(pickuplocation.x, pickuplocation.y);
+        } else{
+            // mungkin kalo masih full health jangan diambil
+            ArrayList<Node> apel = pathFinding(matrixmap,currentWorm.position.x,
+                                    currentWorm.position.y,nearestpowup.x,nearestpowup.y);
+            int lennn = cariParent(apel);
+            if(matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1
+            && unoccupied(apel.get(lennn).x, apel.get(lennn).y)) {
+                return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
+                // tambahin kalo occupied ngapain
+            } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
+                return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
+            }
+        }
+        return new DoNothingCommand();
+    }
+    
+    // private int cekPowerUpSekitar(List<Cell> surroundingBlocks){
+    //     for (int i = 0; i < 9; i++){
+    //         Cell pickuplocation = surroundingBlocks.get(i);
+    //         if (surroundingBlocks.get(i).type != CellType.DEEP_SPACE){
+    //             if (pickuplocation.powerUp.type == PowerUpType.HEALTH_PACK){
+    //                 return i;
+    //             }
+    //         }    
+    //     }
+    //     return 99;
+    // }
 
     private void PrintGraph(int[][] nangka){
         for (int i = 0; i < 33; i++) {
@@ -108,7 +123,7 @@ public class Bot {
         }
     }
 
-    private boolean unoccupied(int x, int y, GameState gameState){
+    private boolean unoccupied(int x, int y){
         int i,j;
         for(j=0; j<gameState.opponents.length; j++){
             for(i=0; i<3; i++){
@@ -185,7 +200,8 @@ public class Bot {
         return kiuw;
     }
 
-    private Pickup powerUpTerdekat(Cell[][] peta){
+    private Pickup powerUpTerdekat(){
+        Cell[][] peta = gameState.map;
         Pickup lokasiPowerup = new Pickup();
         int distance = 99;
         boolean ketemu = false;
@@ -205,11 +221,12 @@ public class Bot {
         else return null;
     }
 
-    private int getDiagonalDistance(int x,int y,int x1, int y1){
+    private int getDiagonalDistance(int x, int y, int x1, int y1){
         return Math.max(Math.abs(x-x1),Math.abs(y-y1));
     }
 
-    private int[][] mapsToGraph(Cell[][] apel){
+    private int[][] mapsToGraph(){
+        Cell[][] apel = gameState.map;
         int graf[][] = new int [33][33];
         for (int i = 0; i < 33; i++) {
             for (int j = 0; j < 33; j++) {
@@ -263,8 +280,7 @@ public class Bot {
     }
 
     private Command huntByID_c(int n) {
-        Cell[][] map = gameState.map;
-        int[][] matrixmap = mapsToGraph(map);
+        int[][] matrixmap = mapsToGraph();
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
         boolean canAttack = false; //dijadiin var global??
@@ -283,8 +299,10 @@ public class Bot {
             ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
                     currentWorm.position.y, locTarget.x, locTarget.y);
             int lennn = cariParent(apel);
-            if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
+            if(matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1
+                && unoccupied(apel.get(lennn).x, apel.get(lennn).y)) {
                 return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
+            // tambahin kalo occupied ngapain
             } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
                 return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
             }
@@ -296,8 +314,7 @@ public class Bot {
     }
 
     private Command huntByID_a(int n) {
-        Cell[][] map = gameState.map;
-        int[][] matrixmap = mapsToGraph(map);
+        int[][] matrixmap = mapsToGraph();
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
         boolean canAttack = false; //dijadiin var global??
@@ -324,8 +341,10 @@ public class Bot {
             ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
                     currentWorm.position.y, locTarget.x, locTarget.y);
             int lennn = cariParent(apel);
-            if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
+            if(matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1
+                && unoccupied(apel.get(lennn).x, apel.get(lennn).y)) {
                 return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
+            // tambahin kalo occupied ngapain
             } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
                 return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
             }
@@ -343,8 +362,7 @@ public class Bot {
     }
 
     private Command huntByID_t(int n) {
-        Cell[][] map = gameState.map;
-        int[][] matrixmap = mapsToGraph(map);
+        int[][] matrixmap = mapsToGraph();
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
         boolean canAttack = false; //dijadiin var global??
@@ -371,8 +389,10 @@ public class Bot {
             ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
                     currentWorm.position.y, locTarget.x, locTarget.y);
             int lennn = cariParent(apel);
-            if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
+            if(matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1
+                && unoccupied(apel.get(lennn).x, apel.get(lennn).y)) {
                 return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
+            // tambahin kalo occupied ngapain
             } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
                 return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
             }

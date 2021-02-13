@@ -12,6 +12,9 @@ public class Worm{
     @SerializedName("health")
     public int health;
 
+    @SerializedName("initialHp")
+    public int initHP;
+
     @SerializedName("position")
     public Position position;
 
