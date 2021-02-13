@@ -275,7 +275,7 @@ public class Bot {
 
     private Command huntByID_c(int n) {
         Cell[][] map = gameState.map;
-        int[][] matrixmap = MapstoGraph(map);
+        int[][] matrixmap = mapsToGraph(map);
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
         boolean canAttack = false; //dijadiin var global??
@@ -291,7 +291,7 @@ public class Bot {
         }
 
         if (canAttack == false) {
-            ArrayList<Node> apel = pathfinding(matrixmap, currentWorm.position.x,
+            ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
                     currentWorm.position.y, locTarget.x, locTarget.y);
             int lennn = cariParent(apel) - 1;
             if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
@@ -308,7 +308,7 @@ public class Bot {
 
     private Command huntByID_a(int n) {
         Cell[][] map = gameState.map;
-        int[][] matrixmap = MapstoGraph(map);
+        int[][] matrixmap = mapsToGraph(map);
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
         boolean canAttack = false; //dijadiin var global??
@@ -335,7 +335,7 @@ public class Bot {
         }
 
         if (canAttack == false && canBananaBomb==false) {
-            ArrayList<Node> apel = pathfinding(matrixmap, currentWorm.position.x,
+            ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
                     currentWorm.position.y, locTarget.x, locTarget.y);
             int lennn = cariParent(apel) - 1;
             if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
@@ -358,7 +358,7 @@ public class Bot {
 
     private Command huntByID_t(int n) {
         Cell[][] map = gameState.map;
-        int[][] matrixmap = MapstoGraph(map);
+        int[][] matrixmap = mapsToGraph(map);
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
         boolean canAttack = false; //dijadiin var global??
@@ -384,7 +384,7 @@ public class Bot {
             canSnowBall= true;
         }
         if (canAttack == false && canSnowBall==false) {
-            ArrayList<Node> apel = pathfinding(matrixmap, currentWorm.position.x,
+            ArrayList<Node> apel = pathFinding(matrixmap, currentWorm.position.x,
                     currentWorm.position.y, locTarget.x, locTarget.y);
             int lennn = cariParent(apel) - 1;
             if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
