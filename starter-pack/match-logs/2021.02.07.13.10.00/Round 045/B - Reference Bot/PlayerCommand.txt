@@ -1,3 +1,0 @@
-Command: snowball 19 13
-Execution time: 11ms
-Exception: null

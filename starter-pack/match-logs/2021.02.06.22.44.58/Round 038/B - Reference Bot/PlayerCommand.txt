@@ -1,3 +1,0 @@
-Command: shoot SE
-Execution time: 11ms
-Exception: null

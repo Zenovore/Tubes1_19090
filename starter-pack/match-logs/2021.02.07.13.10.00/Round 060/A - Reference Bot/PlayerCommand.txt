@@ -1,3 +1,0 @@
-Command: select 2;shoot NE
-Execution time: 13ms
-Exception: null

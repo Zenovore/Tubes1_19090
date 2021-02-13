@@ -196,19 +196,24 @@ public class Bot {
     private Pickup powerUpTerdekat(Cell[][] peta){
         Pickup lokasiPowerup = new Pickup();
         int distance = 99;
+        boolean ketemu = false;
         for (int i = 0; i < 33; i++) {
             for (int j = 0; j < 33; j++) {
                 if (peta[j][i].powerUp != null && peta[j][i].powerUp.type  == PowerUpType.HEALTH_PACK){
-                    if (distance >= getDiagonalDistance(currentWorm.position.x, currentWorm.position.y, i, j)){
-                        distance = getDiagonalDistance(currentWorm.position.x, currentWorm.position.y, i, j);
-                        lokasiPowerup.x = i;
-                        lokasiPowerup.y = j;
-                        return lokasiPowerup;
+                    if (distance >= getDiagonalDistance(currentWorm.position.x, currentWorm.position.y, j, i)){
+                        distance = getDiagonalDistance(currentWorm.position.x, currentWorm.position.y, j, i);
+                        lokasiPowerup.x = j;
+                        lokasiPowerup.y = i;
+                        ketemu = true;
                     }
                 }
             }
         }
-        return null;
+        if (ketemu){
+            return lokasiPowerup;
+        } else{
+            return null;
+        }
     }
 
     private int getDiagonalDistance(int x,int y,int x1, int y1){
