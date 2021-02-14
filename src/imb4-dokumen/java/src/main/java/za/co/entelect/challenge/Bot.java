@@ -53,22 +53,20 @@ public class Bot {
 //        gameState.currentWormId = 0;
         // BATASAN HP CACING
         // return new SelectCommand(1,currentWorm.position.x+1,currentWorm.position.y);
-//       if (getCurrentWorm(gameState).health <= getCurrentWorm(gameState).initHP - 50 && powerUpTerdekat() != null){
-//           if(getFirstWormInRange(3) != null){
-//               return serang();
-//               // atau ga menghindar
-//           } else {
-//               return cariHelthPek();
-//           }
-//       } else {
-//           return serang();
-//            // return cariHelthPek();
-//       }
-
-
-        System.out.println(gameState.myPlayer.worms[1].banana.count);
-        System.out.println(gameState.myPlayer.worms[2].snow.count);
-        return serang();
+      if (getCurrentWorm(gameState).health <= getCurrentWorm(gameState).initHP - 40 && powerUpTerdekat() != null){
+          if(getFirstWormInRange(3) != null && getCurrentWorm(gameState).health > 50){
+              return serang();
+              // atau ga menghindar
+          } else {
+              return cariHelthPek();
+          }
+      } else {
+          return serang();
+           // return cariHelthPek();
+      }
+        // System.out.println(gameState.myPlayer.worms[1].banana.count);
+        // System.out.println(gameState.myPlayer.worms[2].snow.count);
+        // return serang();
 
 
 //      return new DoNothingCommand();
