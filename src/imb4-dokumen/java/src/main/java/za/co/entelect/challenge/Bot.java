@@ -53,17 +53,24 @@ public class Bot {
 //        gameState.currentWormId = 0;
         // BATASAN HP CACING
         // return new SelectCommand(1,currentWorm.position.x+1,currentWorm.position.y);
-       if (getCurrentWorm(gameState).health <= getCurrentWorm(gameState).initHP - 50 && powerUpTerdekat() != null){
-           if(getFirstWormInRange(3) != null){
-               return serang();
-               // atau ga menghindar
-           } else {
-               return cariHelthPek();
-           }
-       } else {
-           return serang();
-            // return cariHelthPek();
-       }
+//       if (getCurrentWorm(gameState).health <= getCurrentWorm(gameState).initHP - 50 && powerUpTerdekat() != null){
+//           if(getFirstWormInRange(3) != null){
+//               return serang();
+//               // atau ga menghindar
+//           } else {
+//               return cariHelthPek();
+//           }
+//       } else {
+//           return serang();
+//            // return cariHelthPek();
+//       }
+
+
+        System.out.println(gameState.myPlayer.worms[1].banana.count);
+        System.out.println(gameState.myPlayer.worms[2].snow.count);
+        return serang();
+
+
 //      return new DoNothingCommand();
     }
     
@@ -71,14 +78,14 @@ public class Bot {
         if(currentWorm.prof == Profession.COMMANDO) return huntByID_c(i+1);
         else if (currentWorm.prof == Profession.AGENT) return huntByID_a(i+1);
         else if (currentWorm.prof == Profession.TECHNOLOGIST) return huntByID_t(i+1);
-        else return serang();
+        return new DoNothingCommand();
     }
     
     private Command serang(){
         if (opponent.worms[1].health > 0) return helpeh(1);
         else if (opponent.worms[2].health > 0) return helpeh(2);
         else if (opponent.worms[0].health > 0) return helpeh(0);
-        else return serang();
+        return new DoNothingCommand();
     }
     
     private Command cariHelthPek(){
@@ -314,7 +321,7 @@ public class Bot {
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
                 .collect(Collectors.toSet());
 
-        if (cells.contains(oppPosition)) {
+        if (cells.contains(oppPosition) && opponent.worms[n-1].health > 0) {
             canAttack = true;
 
         }
@@ -371,20 +378,35 @@ public class Bot {
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
                 .collect(Collectors.toSet());
 
-        if (cells.contains(oppPosition)) canAttack = true;
+        Set<String> cellsBB = constructBananaBombArea(getWormLocationByID(n))
+                .stream()
+                .map(cell -> String.format("%d_%d", cell.x, cell.y))
+                .collect(Collectors.toSet());
 
-        if (cellsB.contains(oppPosition) && currentWorm.banana.count > 0 
+//        System.out.println(getWormLocationByID(n).x);
+//        System.out.println(getWormLocationByID(n).y);
+//        List<String> mainList = new ArrayList<String>();
+//        mainList.addAll(cellsB);
+//        System.out.println(mainList.toString());
+
+//        List<String> mainList2 = new ArrayList<String>();
+//        mainList2.addAll(cells);
+//        System.out.println(mainList2.toString());
+
+        if (cells.contains(oppPosition) && opponent.worms[n-1].health > 0) canAttack = true;
+
+        if (cellsB.contains(oppPosition) && currentWorm.banana.count > 0
             && isBananaBomb[n-1] == false) canBananaBomb= true;
 
         for (int i=0;i<3;i++){
             String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
-            if(cellsB.contains(myPos)){
+            if(cellsBB.contains(myPos) && gameState.myPlayer.worms[i].health > 0){
                 isFriendlyFireB = true;
                 break;
             }
         }
 
-        if (canBananaBomb == true && isFriendlyFireB == false){
+        if (canBananaBomb == true){
             Position target = getWormLocationByID(n);
             isBananaBomb[n-1] = true;
             return new BananaBombCommand(target.x,target.y);
@@ -428,17 +450,22 @@ public class Bot {
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
                 .collect(Collectors.toSet());
 
+        Set<String> cellsSB = constructSnowballArea(locTarget)
+                .stream()
+                .map(cell -> String.format("%d_%d", cell.x, cell.y))
+                .collect(Collectors.toSet());
+
         Set<String> cellsS = constructFireDirectionLines(5)
                 .stream()
                 .flatMap(Collection::stream)
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
                 .collect(Collectors.toSet());
 
-        if (cells.contains(oppPosition)) canAttack = true;
+        if (cells.contains(oppPosition) && opponent.worms[n-1].health > 0) canAttack = true;
 
         for (int i=0;i<3;i++){
             String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
-            if(cells.contains(myPos)){
+            if(cellsSB.contains(myPos) && gameState.myPlayer.worms[i].health>0){
                 isFriendlyFire = true;
                 break;
             }
@@ -452,7 +479,7 @@ public class Bot {
             }
         }
         if (cellsS.contains(oppPosition) && currentWorm.snow.count > 0
-            && isSnowBall[n-1] == false) canSnowBall= true;
+            && isSnowBall[n-1] == false && opponent.worms[n-1].health>0) canSnowBall= true;
 
         if (canSnowBall == true && isFriendlyFireS == false){
             Position target = getWormLocationByID(n);
@@ -503,6 +530,46 @@ public class Bot {
             directionLines.add(directionLine);
         }
         return directionLines;
+    }
+
+    private List<Cell> constructBananaBombArea(Position target){
+        List<Cell> area = new ArrayList<Cell>();
+        //add horizontal
+        for(int i=-2;i<3;i++){
+            if (i != 0) {
+                area.add(gameState.map[target.y][target.x+i]);
+            }
+        }
+        //add vertikal
+        for(int i=-2;i<3;i++){
+            if(i != 0) {
+                area.add(gameState.map[target.y + i][target.x]);
+            }
+        }
+        //add diagonal
+        area.add(gameState.map[target.y+1][target.x + 1]);
+        area.add(gameState.map[target.y-1][target.x + 1]);
+        area.add(gameState.map[target.y-1][target.x - 1]);
+        area.add(gameState.map[target.y-1][target.x + 1]);
+
+        //add self
+        area.add(gameState.map[target.y][target.x]);
+
+        return area;
+    }
+
+    private List<Cell> constructSnowballArea(Position target){
+        List<Cell> area = new ArrayList<Cell>();
+        area.add(gameState.map[target.y+1][target.x]);
+        area.add(gameState.map[target.y-1][target.x]);
+        area.add(gameState.map[target.y][target.x+1]);
+        area.add(gameState.map[target.y][target.x-1]);
+        area.add(gameState.map[target.y+1][target.x+1]);
+        area.add(gameState.map[target.y+1][target.x-1]);
+        area.add(gameState.map[target.y-1][target.x+1]);
+        area.add(gameState.map[target.y-1][target.x-1]);
+
+        return area;
     }
 
     private List<Cell> getSurroundingCells(int x, int y) {
