@@ -3,6 +3,9 @@ import com.google.gson.annotations.SerializedName;
 import za.co.entelect.challenge.enums.Profession;
 
 public class Worm{
+    @SerializedName("roundsUntilUnfrozen")
+    public int sampeMeleleh;
+
     @SerializedName("profession")
     public Profession prof;
 

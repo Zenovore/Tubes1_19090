@@ -1,8 +1,8 @@
 {
 	"author": "Imb4 Dokumen",
 	"email": "James.James@example.com",
-	"nickName": "Imb4",
+	"nickName": "IMB4 Dokumen",
 	"botLocation": "/target",
-	"botFileName": "java-sample-bot-jar-with-dependencies.jar",
+	"botFileName": "IMB4-Dokumen-jar-with-dependencies.jar",
 	"botLanguage": "java"
 }
