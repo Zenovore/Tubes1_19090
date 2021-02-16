@@ -52,11 +52,16 @@ public class Bot {
         //     if(getFirstWormInRange(4) != null) return serang(); // atau ga menghindar
         //     else return cariHelthPek();
         // } else return serang();
-        if (isSurrounded() && !isSurroundedF()){
-            return keTemen();
-        } else {
-            return serang();
-        }
+        // if (isSurrounded() && !isSurroundedF()){
+            // return keTemen();
+            if (currentWorm.health <30 ){
+                return kaburEuy();
+            } else {
+                return serang();
+            }
+        // } else {
+        //     return serang();
+        // }
     }
     
     private Command serang(){
@@ -597,12 +602,14 @@ public class Bot {
         //         }
         //     }
         // List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
-        // System.out.println(surroundingBlocks.size());
+        // int cellIdx = random.nextInt(surroundingBlocks.size());
+        // Cell block = surroundingBlocks.get(cellIdx);
+        // // System.out.println(surroundingBlocks.size());
 
-        // for(int i = 0;i <= surroundingBlocks.size(); i++){
-        //     Cell block = surroundingBlocks.get(i);
+        // for(int i = 0;i < surroundingBlocks.size(); i++){
+        //     block = surroundingBlocks.get(i);
         //     if (block.type != CellType.LAVA && block.type != CellType.DEEP_SPACE
-        //     && getFirstWormInRange(4) == null && unoccupied(block.x,block.y)){
+        //     && unoccupied(block.x,block.y)){
         //         break;
         //     }
         // }
@@ -613,7 +620,7 @@ public class Bot {
         // } else if (block.type == CellType.DIRT) {
         //     return new DigCommand(block.x, block.y);
         // } else{
-            return new DoNothingCommand();
+        //     return serang();
         // }
         
         // Worm locTarget = getFirstWormInRange(5);
