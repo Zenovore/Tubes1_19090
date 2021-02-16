@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Bot {
-    // TODO: hindar lava, masih donothing, si agen butuh kuliah
+    // TODO: hindar lava, masih donothing, si agen butuh kuliah, first round choke, menghindar, select
     private Random random;
     private GameState gameState;
     private Opponent opponent;
@@ -57,7 +57,6 @@ public class Bot {
         } else {
             return serang();
         }
-        // PrintGraph(mapsToGraph());
         // return new DoNothingCommand();
     }
     
@@ -89,31 +88,24 @@ public class Bot {
             ArrayList<Node> apel = pathFinding(matrixmap,currentWorm.position.x,
                                     currentWorm.position.y,nearestpowup.x,nearestpowup.y);
             int lennn = cariParent(apel);
-            if(matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1) {
-                if(unoccupied(apel.get(lennn).x, apel.get(lennn).y)) {
-                    return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
-                } else if(getFirstWormInRange(4) != null) {
-                    Direction shootdir = resolveDirection(currentWorm.position,getFirstWormInRange(4).position);
-                    return new ShootCommand(shootdir);
-                } else {
-                    // HERE
-                    // move ke cell lain, misalnya gada lakuin sesuatu buat hindar donothing
-                }
+            if(getFirstWormInRange(4) != null) {
+                Direction shootdir = resolveDirection(currentWorm.position,getFirstWormInRange(4).position);
+                return new ShootCommand(shootdir);
             } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
                 return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
+            } else {
+                return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
             }
         }
-        return new DoNothingCommand();
+        // return new DoNothingCommand();
     }
     
     private int cekPowerUpSekitar(List<Cell> surroundingBlocks){
         for (int i = 0; i < 9; i++){
             Cell pickuplocation = surroundingBlocks.get(i);
-            if (surroundingBlocks.get(i).type != CellType.DEEP_SPACE){
-                if (pickuplocation.powerUp.type == PowerUpType.HEALTH_PACK){
+            if (surroundingBlocks.get(i).type != CellType.DEEP_SPACE
+                && pickuplocation.powerUp.type == PowerUpType.HEALTH_PACK)
                     return i;
-                }
-            }    
         }
         return 99;
     }
@@ -128,23 +120,6 @@ public class Bot {
                 }
             }
         }
-    }
-
-    private boolean unoccupied(int x, int y){
-        int i;
-        for(i=0; i<gameState.opponents[0].worms.length; i++){
-            if(x == gameState.opponents[0].worms[i].position.x
-                && y == gameState.opponents[0].worms[i].position.y){
-                return false;
-            }
-        }
-        for(i=0; i<gameState.myPlayer.worms.length; i++){
-            if(x == gameState.myPlayer.worms[i].position.x
-                && y == gameState.myPlayer.worms[i].position.y){
-                return false;
-            }
-        }
-        return true;
     }
 
     private ArrayList<Node> pathFinding(int[][] peta, int x, int y, int xend, int yend){
@@ -350,7 +325,6 @@ public class Bot {
         
         if (canBananaBomb && !isFriendlyFireB){
             Position target = getWormLocationByID(n);
-            // isBananaBomb[n-1] = true;
             return new BananaBombCommand(target.x,target.y);
         } else if (canAttack && !isFriendlyFire) {
             Direction shootdir = resolveDirection(currentWorm.position, locTarget);
@@ -400,7 +374,6 @@ public class Bot {
 
         if (canSnowBall && !isFriendlyFireS){
             Position target = getWormLocationByID(n);
-            // isSnowBall[n-1] = true;
             return new SnowballCommand(target.x,target.y);
         } else if (canAttack && !isFriendlyFire) {
             Direction shootdir = resolveDirection(currentWorm.position, locTarget);
@@ -414,15 +387,12 @@ public class Bot {
     private Command moveOrDig(int[][] matrixmap, int x, int y, int xt, int yt){
         ArrayList<Node> apel = pathFinding(matrixmap, x, y, xt, yt);
         int lennn = cariParent(apel);
-        if(matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 1
-            && unoccupied(apel.get(lennn).x, apel.get(lennn).y)) {
-                return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
-        } else if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
+        if (matrixmap[apel.get(lennn).y][apel.get(lennn).x] == 2) {
             return new DigCommand(apel.get(lennn).x, apel.get(lennn).y);
         } else {
-            // HERE move ke cell lain, misalnya gada lakuin sesuatu buat hindar donothing
+            return new MoveCommand(apel.get(lennn).x, apel.get(lennn).y);
         }
-        return new DoNothingCommand();
+        // return new DoNothingCommand();
     }
 
     private Boolean canSpecial(int n){
