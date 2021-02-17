@@ -44,7 +44,10 @@ public class Bot {
     }
 
     public Command run() {
-        return kaburEuy();
+        if (currentWorm.health < 30){
+            return kaburEuy();
+        }
+        return serang();
     }
     
     private Command serang(){
@@ -226,9 +229,21 @@ public class Bot {
         boolean canBananaBomb = false;
 
         Set<String> cells = makeCells(4);
+        // Set<String> cellsB = = makeCells(5);
+        Set<String> cellsBB = constructBananaBombArea(locTarget)
+                .stream()
+                .map(cell -> String.format("%d_%d", cell.x, cell.y))
+                .collect(Collectors.toSet());
+
         if (cells.contains(oppPosition) && opponent.worms[n-1].health > 0) canAttack = true;
         if (canSpecialT(n,5) && currentWorm.banana.count > 0) canBananaBomb = true;
         
+        // ngabisin bom
+        Worm opp2 = getFirstWormInRange(5);
+        if (opp2 != null && currentWorm.banana.count > 0){
+            Position target = opp2.position;
+            return new BananaBombCommand(target.x,target.y);
+        }
         Worm opp = getFirstWormInRange(4);
         if (opp != null) {
             if (opp.id != n && !isFriendlyFire0(canAttack, opp.position)){
@@ -236,19 +251,7 @@ public class Bot {
                 return new ShootCommand(shootdir);
             }
         }
-        // ngabisin bom
-        Worm opp2 = getFirstWormInRange(5);
-        if (opp2 != null && currentWorm.banana.count > 0){
-            Position target = getWormLocationByID(n);
-            return new BananaBombCommand(target.x,target.y);
-        }
-        
-        // Set<String> cellsB = = makeCells(5);
-        Set<String> cellsBB = constructBananaBombArea(getWormLocationByID(n))
-                .stream()
-                .map(cell -> String.format("%d_%d", cell.x, cell.y))
-                .collect(Collectors.toSet());
-                
+
         isFriendlyFire = isFriendlyFire0(canAttack, locTarget);
         isFriendlyFireB = isFriendlyFire1(cellsBB);
 
@@ -272,20 +275,6 @@ public class Bot {
         boolean isFriendlyFireS = false;
         boolean canSnowBall = false;
 
-        Worm opp = getFirstWormInRange(4);
-        if (opp != null) {
-            if (opp.id != n && !isFriendlyFire0(canAttack, opp.position)){
-                Direction shootdir = resolveDirection(currentWorm.position, opp.position);
-                return new ShootCommand(shootdir);
-            }
-        }
-        // ngabisin snobol
-        Worm opp2 = getFirstWormInRange(5);
-        if (currentWorm.health < 50 && opp2 != null && currentWorm.snow.count > 0){
-            Position target = getWormLocationByID(n);
-            return new SnowballCommand(target.x,target.y);
-        }
-
         Set<String> cells = makeCells(4);
         // Set<String> cellsS = makeCells(5);
         Set<String> cellsSB = constructSnowballArea(locTarget)
@@ -298,7 +287,22 @@ public class Bot {
         if (canSpecialT(n,5) && currentWorm.snow.count > 0
                 && opponent.worms[n-1].health > 0 && opponent.worms[n-1].sampeMeleleh == 0)
                 canSnowBall = true;
-
+                
+        // ngabisin snobol
+        Worm opp2 = getFirstWormInRange(5);
+        if (currentWorm.health < 50 && opp2 != null && currentWorm.snow.count > 0
+            && opp2.sampeMeleleh == 0){
+            Position target = opp2.position;
+            return new SnowballCommand(target.x,target.y);
+        }
+        Worm opp = getFirstWormInRange(4);
+        if (opp != null) {
+            if (opp.id != n && !isFriendlyFire0(canAttack, opp.position)){
+                Direction shootdir = resolveDirection(currentWorm.position, opp.position);
+                return new ShootCommand(shootdir);
+            }
+        }
+        
         isFriendlyFire = isFriendlyFire0(canAttack, locTarget);
         isFriendlyFireS = isFriendlyFire1(cellsSB);
 
@@ -324,23 +328,21 @@ public class Bot {
         }
     }
 
-    private Boolean canSpecial(int n){
-        for(int i=0; i<gameState.opponents[0].worms.length; i++){
-            if(euclideanDistance(currentWorm.position.x,currentWorm.position.y,
-                gameState.opponents[0].worms[i].position.x,
-                gameState.opponents[0].worms[i].position.y) <=n)
-                return true;
-        }
-        return false;
-    }
+    // private Boolean canSpecial(int n){
+    //     for(int i=0; i<gameState.opponents[0].worms.length; i++){
+    //         if(euclideanDistance(currentWorm.position.x,currentWorm.position.y,
+    //             gameState.opponents[0].worms[i].position.x,
+    //             gameState.opponents[0].worms[i].position.y) <= n)
+    //             return true;
+    //     }
+    //     return false;
+    // }
 
     private Boolean canSpecialT(int target, int n){
-        for(int i=0; i<gameState.opponents[0].worms.length; i++){
-            if(euclideanDistance(currentWorm.position.x,currentWorm.position.y,
-                gameState.opponents[0].worms[i].position.x,
-                gameState.opponents[0].worms[i].position.y) <= n && gameState.opponents[0].worms[i].id == target)
-                return true;
-        }
+        if(euclideanDistance(currentWorm.position.x,currentWorm.position.y,
+            gameState.opponents[0].worms[target-1].position.x,
+            gameState.opponents[0].worms[target-1].position.y) <= n)
+            return true;
         return false;
     }
 
@@ -405,18 +407,13 @@ public class Bot {
 
     private ArrayList<Cell> constructBananaBombArea(Position target){
         ArrayList<Cell> area = new ArrayList<>();
-        for(int i=-2;i<3;i++)
-            if(i != 0 && target.x+i<33) area.add(gameState.map[target.y][target.x+i]); // HORIZONTAL
-        for(int i=-2;i<3;i++)
-            if(i != 0 && target.y+i<33) area.add(gameState.map[target.y+i][target.x]); // VERTICAL
-
-        // DIAGONAL
-        if (target.y+1<33 && target.x+1 < 33) area.add(gameState.map[target.y+1][target.x+1]);
-        if (target.y-1<33 && target.x+1 < 33) area.add(gameState.map[target.y-1][target.x+1]);
-        if (target.y-1<33 && target.x-1 < 33) area.add(gameState.map[target.y-1][target.x-1]);
-        if (target.y-1<33 && target.x+1 < 33) area.add(gameState.map[target.y-1][target.x+1]);
-        
-        area.add(gameState.map[target.y][target.x]); // CENTER
+        for (int x = -1; x <= 1; x++)
+            for (int y = -1; y <= 1; y++)
+                area = helpeg(target, x, y, area);
+        area = helpeg(target, -2, 0, area);
+        area = helpeg(target, 0, 2, area);
+        area = helpeg(target, 2, 0, area);
+        area = helpeg(target, 0, -2, area);
         return area;
     }
 
