@@ -1,5 +1,4 @@
 package za.co.entelect.challenge;
-
 import za.co.entelect.challenge.command.*;
 import za.co.entelect.challenge.entities.*;
 import za.co.entelect.challenge.enums.*;
@@ -196,9 +195,11 @@ public class Bot {
         boolean isFriendlyFire = false;
 
         Worm opp = getFirstWormInRange(4);
-        if (opp != null && opp.id != n) {
-            Direction shootdir = resolveDirection(currentWorm.position, opp.position);
-            return new ShootCommand(shootdir);
+        if (opp != null) {
+            if (opp.id != n && !isFriendlyFire0(canAttack, opp.position)){
+                Direction shootdir = resolveDirection(currentWorm.position, opp.position);
+                return new ShootCommand(shootdir);
+            }
         }
 
         Set<String> cells = makeCells(4);
@@ -224,31 +225,33 @@ public class Bot {
         boolean isFriendlyFireB = false;
         boolean canBananaBomb = false;
 
+        Set<String> cells = makeCells(4);
+        if (cells.contains(oppPosition) && opponent.worms[n-1].health > 0) canAttack = true;
+        if (canSpecialT(n,5) && currentWorm.banana.count > 0) canBananaBomb = true;
+        
         Worm opp = getFirstWormInRange(4);
-        if (opp != null && opp.id != n){
-            Direction shootdir = resolveDirection(currentWorm.position, opp.position);
-            return new ShootCommand(shootdir);
+        if (opp != null) {
+            if (opp.id != n && !isFriendlyFire0(canAttack, opp.position)){
+                Direction shootdir = resolveDirection(currentWorm.position, opp.position);
+                return new ShootCommand(shootdir);
+            }
         }
         // ngabisin bom
         Worm opp2 = getFirstWormInRange(5);
-        if (currentWorm.health < 50 && opp2 != null && currentWorm.banana.count > 0){
+        if (opp2 != null && currentWorm.banana.count > 0){
             Position target = getWormLocationByID(n);
             return new BananaBombCommand(target.x,target.y);
         }
-
-        Set<String> cells = makeCells(4);
+        
         // Set<String> cellsB = = makeCells(5);
         Set<String> cellsBB = constructBananaBombArea(getWormLocationByID(n))
                 .stream()
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
                 .collect(Collectors.toSet());
-
-        if (cells.contains(oppPosition) && opponent.worms[n-1].health > 0) canAttack = true;
-        if (canSpecialT(n,5) && currentWorm.banana.count > 0) canBananaBomb = true;
-
+                
         isFriendlyFire = isFriendlyFire0(canAttack, locTarget);
         isFriendlyFireB = isFriendlyFire1(cellsBB);
-        
+
         if (canBananaBomb && !isFriendlyFireB){
             Position target = getWormLocationByID(n);
             return new BananaBombCommand(target.x,target.y);
@@ -270,9 +273,11 @@ public class Bot {
         boolean canSnowBall = false;
 
         Worm opp = getFirstWormInRange(4);
-        if (opp != null && opp.id != n){
-            Direction shootdir = resolveDirection(currentWorm.position, opp.position);
-            return new ShootCommand(shootdir);
+        if (opp != null) {
+            if (opp.id != n && !isFriendlyFire0(canAttack, opp.position)){
+                Direction shootdir = resolveDirection(currentWorm.position, opp.position);
+                return new ShootCommand(shootdir);
+            }
         }
         // ngabisin snobol
         Worm opp2 = getFirstWormInRange(5);
@@ -440,8 +445,8 @@ public class Bot {
     
     private ArrayList<Cell> helpep(int range, int x, int y, ArrayList<Cell> line){
         for(int i = 1; i < range; i++)
-            if (isValidCoordinate(currentWorm.position.x + x, currentWorm.position.y + y))
-                line.add(gameState.map[currentWorm.position.y + y][currentWorm.position.x + x]);
+            if (isValidCoordinate(currentWorm.position.x + i*x, currentWorm.position.y + i*y))
+                line.add(gameState.map[currentWorm.position.y + i*x][currentWorm.position.x + i*x]);
         return line;
     }
 
@@ -449,7 +454,7 @@ public class Bot {
         if (canAttack){
             Direction shootDir = resolveDirection(currentWorm.position, locTarget);
             Set<String> myline = makeLine(shootDir);
-    
+
             for (int i=0;i<3;i++){
                 String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
                 if(myline.contains(myPos)) return true;
@@ -498,7 +503,7 @@ public class Bot {
         try{
             return Direction.valueOf(builder.toString());
         } catch (IllegalArgumentException i){
-            System.out.println("RHUSAKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK");
+            // System.out.println("RHUSAKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK");
             return null;
         }        
     }
@@ -507,17 +512,41 @@ public class Bot {
         Position locTarget = new Position();
         locTarget.x = block.x;
         locTarget.y = block.y;
-        for(int i=0; i<3; i++){
-            Direction shootDir = resolveDirection(opponent.worms[i].position, locTarget);
-            if (shootDir != null){
-                // System.out.println(shootDir.x + " " + shootDir.y);
-                Set<String> myline = makeLine(shootDir);
-                String myPos = String.format("%d_%d", locTarget.x, locTarget.y);
-                if(myline.contains(myPos)) return true;
-            }  
+        int i = gameState.opponents[0].currentWormId - 1;
+        boolean a = false;
+        boolean b = false;
+        boolean c = false;
+        for(int k=0; k<3; k++){
+            if(opponent.worms[k].health > 0){
+                Direction shootDir = resolveDirection(opponent.worms[k].position, locTarget);
+                if (shootDir != null){
+                    Set<String> myline = makeLine(shootDir);
+                    String myPos = String.format("%d_%d", locTarget.x, locTarget.y);
+                    String wormPos = String.format("%d_%d",currentWorm.position.x,currentWorm.position.y);
+                    
+                    if(k == i && myline.contains(myPos) && !myline.contains(wormPos)) {
+                        // ini kalo musuhnya yg skrg bakal jalan, trus dia bisa nembak kita
+                        // dan posisi tujuan kita ga sama kek posisi skrg, kita buat true
+                        if(k == 0) a = true;
+                        if(k == 1) b = true;
+                        if(k == 2) c = true;
+                    }
+                    if(k != i && myline.contains(myPos)) {
+                        // ini kalo musuhnya bukan yg skrg bakal jalan
+                        if(k == 0) a = true;
+                        if(k == 1) b = true;
+                        if(k == 2) c = true;
+                    }
+                }
+            }else{
+                if(k == 0) a = true;
+                if(k == 1) b = true;
+                if(k == 2) c = true;
+            }
         }
-        return false;
+        return a && b && c;
     }
+
 
     private Command kaburEuy(){
         List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
@@ -541,34 +570,21 @@ public class Bot {
                 && isInEnemyLineOfFire(block) && unoccupied(block.x,block.y)
                 && block.x <= 20 && block.x >= 10 && block.y >= 10 && block.y <= 20
                 && !(block.x == currentWorm.position.x && block.y == currentWorm.position.y)){
-                    if (block.type == CellType.DIRT){
-                        ketemu = true;
-                        xtanah = block.x;
-                        ytanah = block.y;
-                    }else{
-                        ketemu = true;
-                        break;
-                    }
+                if (block.type == CellType.DIRT){
+                    ketemu = true;
+                    xtanah = block.x;
+                    ytanah = block.y;
+                }else{
+                    ketemu = true;
+                    break;
+                }
             }
         }
         if (ketemu) {
-            int opHealth = 0;
-            for(int i=0; i<3; i++) opHealth += gameState.opponents[0].worms[i].health;
-            if (opHealth >= 8 && currentWorm.health < 8) {
-                if (mapsToGraph()[ytanah][xtanah] == 2)
-                    return new DigCommand(xtanah, ytanah);
-                else
-                    return new MoveCommand(block.x, block.y);
-            } else if (opHealth <= 8 && currentWorm.health <= 8) {
-                if (gameState.opponents[0].score >= gameState.myPlayer.score) {
-                    if (mapsToGraph()[block.y][block.x] == 2)
-                        return new DigCommand(block.x, block.y);
-                    else
-                        return new MoveCommand(block.x, block.y);
-                }
-            } else return serang();
-        } else {
-
+            if (block.type == CellType.DIRT && mapsToGraph()[ytanah][xtanah] == 2)
+                return new DigCommand(xtanah, ytanah);
+            else
+                return new MoveCommand(block.x, block.y);
         }
         return serang();
     }
