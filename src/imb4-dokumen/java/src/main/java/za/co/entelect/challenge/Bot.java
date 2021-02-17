@@ -8,7 +8,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Bot {
-    // TODO: si agen butuh kuliah, first round perhaps masih ada choke, menghindar, select
     private Random random;  
     private GameState gameState;
     private Opponent opponent;
@@ -40,28 +39,13 @@ public class Bot {
 
     private int cariPanjang(ArrayList<Node> path){
         int i = 0;
+        if(path.get(i).parent == null) return 0;
         while(path.get(i).parent != null) i++;
-        if(path.get(0).parent == null) return 0;
         return i-1;
     }
 
     public Command run() {
-        // BATASAN HP CACING
-        // if (getCurrentWorm(gameState).health <= getCurrentWorm(gameState).initHP - 40
-        //     && powerUpTerdekat() != null){
-        //     if(getFirstWormInRange(4) != null) return serang(); // atau ga menghindar
-        //     else return cariHelthPek();
-        // } else return serang();
-        // if (isSurrounded() && !isSurroundedF()){
-            // return keTemen();
-            if (currentWorm.health <30 ){
-                return kaburEuy();
-            } else {
-                return serang();
-            }
-        // } else {
-        //     return serang();
-        // }
+        return kaburEuy();
     }
     
     private Command serang(){
@@ -72,56 +56,10 @@ public class Bot {
     }
     
     private Command helperSerang(int i) {
-        if(currentWorm.prof == Profession.COMMANDO) return huntByIDCommando(i+1);
+        if (currentWorm.prof == Profession.COMMANDO) return huntByIDCommando(i+1);
         else if (currentWorm.prof == Profession.AGENT) return huntByIDAgent(i+1);
         else if (currentWorm.prof == Profession.TECHNOLOGIST) return huntByIDTechnologist(i+1);
         return new DoNothingCommand();
-    }
-    
-    private Command cariHelthPek(){
-        int[][] matrixmap = mapsToGraph();
-        Pickup nearestpowup = powerUpTerdekat();
-        // Ambil powerup
-        List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
-        int cellIdx = cekPowerUpSekitar(surroundingBlocks);
-        if (cellIdx != 99){
-            Cell pickuplocation = surroundingBlocks.get(cellIdx);
-            return new MoveCommand(pickuplocation.x, pickuplocation.y);
-        } else {
-            ArrayList<Node> apel = pathFinding(matrixmap,currentWorm.position.x,
-                                    currentWorm.position.y,nearestpowup.x,nearestpowup.y);
-            int panjang = cariPanjang(apel);
-            if(getFirstWormInRange(4) != null) {
-                Direction shootdir = resolveDirection(currentWorm.position,getFirstWormInRange(4).position);
-                return new ShootCommand(shootdir);
-            } else if (matrixmap[apel.get(panjang).y][apel.get(panjang).x] == 2) {
-                return new DigCommand(apel.get(panjang).x, apel.get(panjang).y);
-            } else {
-                return new MoveCommand(apel.get(panjang).x, apel.get(panjang).y);
-            }
-        }
-    }
-    
-    private int cekPowerUpSekitar(List<Cell> surroundingBlocks){
-        for (int i = 0; i < 9; i++){
-            Cell pickuplocation = surroundingBlocks.get(i);
-            if (surroundingBlocks.get(i).type != CellType.DEEP_SPACE
-                && pickuplocation.powerUp.type == PowerUpType.HEALTH_PACK)
-                    return i;
-        }
-        return 99;
-    }
-
-    // HERE
-    private void PrintGraph(int[][] nangka){
-        for (int i = 0; i < 33; i++) {
-            for (int j = 0; j < 33; j++) {
-                System.out.print(nangka[i][j]);
-                if (j==32){
-                    System.out.println();
-                }
-            }
-        }
     }
 
     private ArrayList<Node> pathFinding(int[][] peta, int x, int y, int xend, int yend){
@@ -172,7 +110,7 @@ public class Bot {
     private Queue<Node> helperPath(Alamatpath jalan, int x, int y, Node pinpoint, Queue<Node> queuejalan){
         Queue<Node> kiuw = queuejalan;
         Node check = jalan.penyimpananjalan[pinpoint.x + x][pinpoint.y + y];
-        if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value){
+        if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value ){
             check.jarak = pinpoint.jarak + check.value;
             check.parent = pinpoint;
             kiuw.add(check);
@@ -218,24 +156,10 @@ public class Bot {
             }
         }
         for(int k=0; k<3; k++){
-            graf[getWormLocationByID(k+1).x][getWormLocationByID(k).y] = 69;
-            graf[gameState.myPlayer.worms[k].position.x][gameState.myPlayer.worms[k].position.y] = 420;
+            graf[getWormLocationByID(k+1).x][getWormLocationByID(k+1).y] = 69;
+            graf[gameState.myPlayer.worms[k].position.x][gameState.myPlayer.worms[k].position.y] = 69;
         }
         return graf;
-    }
-
-    // HERE
-    private List<Cell> getMaps() {
-        ArrayList<Cell> cells = new ArrayList<>();
-        for (int i = 0; i < 33; i++) {
-            for (int j = 0; j < 33; j++) {
-                // Don't include the current position
-                if (isValidCoordinate(i, j)) {
-                    cells.add(gameState.map[j][i]);
-                }
-            }
-        }
-        return cells;
     }
 
     private Worm getFirstWormInRange(int range) {
@@ -268,7 +192,7 @@ public class Bot {
     private Command huntByIDCommando(int n) {
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
-        boolean canAttack = false; //dijadiin var global??
+        boolean canAttack = false;
         boolean isFriendlyFire = false;
 
         Worm opp = getFirstWormInRange(4);
@@ -365,7 +289,6 @@ public class Bot {
                 .collect(Collectors.toSet());
 
         if (cells.contains(oppPosition) && opponent.worms[n-1].health > 0) canAttack = true;
-        // if (canSpecial(5) && currentWorm.snow.count > 0) canSnowBall = true;
         // nunggu meleleh
         if (canSpecialT(n,5) && currentWorm.snow.count > 0
                 && opponent.worms[n-1].health > 0 && opponent.worms[n-1].sampeMeleleh == 0)
@@ -423,20 +346,10 @@ public class Bot {
             for (int directionMultiplier = 1; directionMultiplier <= range; directionMultiplier++) {
                 int coordinateX = currentWorm.position.x + (directionMultiplier * direction.x);
                 int coordinateY = currentWorm.position.y + (directionMultiplier * direction.y);
-
-                if (!isValidCoordinate(coordinateX, coordinateY)) {
-                    break;
-                }
-
-                if (euclideanDistance(currentWorm.position.x, currentWorm.position.y, coordinateX, coordinateY) > range) {
-                    break;
-                }
-
+                if (!isValidCoordinate(coordinateX, coordinateY)) break;
+                if (euclideanDistance(currentWorm.position.x, currentWorm.position.y, coordinateX, coordinateY) > range) break;
                 Cell cell = gameState.map[coordinateY][coordinateX];
-                if (cell.type != CellType.AIR) {
-                    break;
-                }
-
+                if (cell.type != CellType.AIR) break;
                 directionLine.add(cell);
             }
             directionLines.add(directionLine);
@@ -444,8 +357,34 @@ public class Bot {
         return directionLines;
     }
 
+    private List<List<Cell>> constructFireDirectionLinesUnique(int range, int x, int y) {
+        List<List<Cell>> directionLines = new ArrayList<>();
+        for (Direction direction : Direction.values()) {
+            List<Cell> directionLine = new ArrayList<>();
+            for (int directionMultiplier = 1; directionMultiplier <= range; directionMultiplier++) {
+                int coordinateX = x  + (directionMultiplier * direction.x);
+                int coordinateY = y  + (directionMultiplier * direction.y);
+                if (!isValidCoordinate(coordinateX, coordinateY)) break;
+                if (euclideanDistance(x, y, coordinateX, coordinateY) > range) break;
+                Cell cell = gameState.map[coordinateY][coordinateX];
+                if (cell.type != CellType.AIR) break;
+                directionLine.add(cell);
+            }
+            directionLines.add(directionLine);
+        }
+        return directionLines;
+    }
+    
     private Set<String> makeCells(int n){
         return constructFireDirectionLines(n)
+                .stream()
+                .flatMap(Collection::stream)
+                .map(cell -> String.format("%d_%d", cell.x, cell.y))
+                .collect(Collectors.toSet());
+    }
+
+    private Set<String> makeCellsUnique(int n, int x, int y){
+        return constructFireDirectionLinesUnique(n,x,y)
                 .stream()
                 .flatMap(Collection::stream)
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
@@ -492,7 +431,9 @@ public class Bot {
     private ArrayList<Cell> constructShootLine(Direction dir){
         ArrayList<Cell> line = new ArrayList<>();
         for(Direction direction : Direction.values()) {
-            line = direction.x != 0 && direction.y != 0 ? helpep(4, direction.x, direction.y, line) : helpep(5, direction.x, direction.y, line);
+            if (direction == dir) {
+                line = direction.x != 0 && direction.y != 0 ? helpep(4, direction.x, direction.y, line) : helpep(5, direction.x, direction.y, line);
+            }
         }
         return line;
     }
@@ -528,14 +469,10 @@ public class Bot {
 
     private ArrayList<Cell> getSurroundingCells(int x, int y) {
         ArrayList<Cell> cells = new ArrayList<>();
-        for (int i = x - 1; i <= x + 1; i++) {
-            for (int j = y - 1; j <= y + 1; j++) {
-                // Don't include the current position
-                if (i != x && j != y && isValidCoordinate(i, j)) {
+        for (int i = x - 1; i <= x + 1; i++)
+            for (int j = y - 1; j <= y + 1; j++)
+                if ((i != x || j != y) && isValidCoordinate(i, j))
                     cells.add(gameState.map[j][i]);
-                }
-            }
-        }
         return cells;
     }
 
@@ -550,104 +487,90 @@ public class Bot {
 
     private Direction resolveDirection(Position a, Position b) {
         StringBuilder builder = new StringBuilder();
-
         int verticalComponent = b.y - a.y;
         int horizontalComponent = b.x - a.x;
 
-        if (verticalComponent < 0) {
-            builder.append('N');
-        } else if (verticalComponent > 0) {
-            builder.append('S');
-        }
+        if (verticalComponent < 0) builder.append('N');
+        else if (verticalComponent > 0) builder.append('S');
 
-        if (horizontalComponent < 0) {
-            builder.append('W');
-        } else if (horizontalComponent > 0) {
-            builder.append('E');
-        }
-
-        return Direction.valueOf(builder.toString());
+        if (horizontalComponent < 0) builder.append('W');
+        else if (horizontalComponent > 0) builder.append('E');
+        try{
+            return Direction.valueOf(builder.toString());
+        } catch (IllegalArgumentException i){
+            System.out.println("RHUSAKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK");
+            return null;
+        }        
     }
 
-    private boolean isSurrounded(){
-        int count = 0;
-        for (Worm enemyWorm : opponent.worms)
-            if(euclideanDistance(currentWorm.position.x,currentWorm.position.y,
-                            enemyWorm.position.x,enemyWorm.position.y) <= 5)
-                count += 1;
-        return count>1;
-    }
-
-    private boolean isSurroundedF(){
-        int count = 0;
-        for (Worm friend : gameState.myPlayer.worms)
-            if(euclideanDistance(currentWorm.position.x,currentWorm.position.y,
-                            friend.position.x,friend.position.y) <= 5)
-                count += 1;
-        return count>1;
+    private boolean isInEnemyLineOfFire(Cell block){
+        Position locTarget = new Position();
+        locTarget.x = block.x;
+        locTarget.y = block.y;
+        for(int i=0; i<3; i++){
+            Direction shootDir = resolveDirection(opponent.worms[i].position, locTarget);
+            if (shootDir != null){
+                // System.out.println(shootDir.x + " " + shootDir.y);
+                Set<String> myline = makeLine(shootDir);
+                String myPos = String.format("%d_%d", locTarget.x, locTarget.y);
+                if(myline.contains(myPos)) return true;
+            }  
+        }
+        return false;
     }
 
     private Command kaburEuy(){
-        // Worm opp = getFirstWormInRange(4);
-        // int[][] peta = mapsToGraph();
-        // Direction oppDir;
-        // int cacingx = currentWorm.position.x;
-        // int cacingy = currentWorm.position.y;
-        // if (opp != null && opp.health > 0){
-        //     oppDir = resolveDirection(opp.position, currentWorm.position);
-        //     if (oppDir == Direction.E || oppDir == Direction.W){
-        //         if (map[cacingx][cacingy-1] != 666 && map[cacingx][cacingy-1] != 0 ){
-        //             moveOrDig(mapsToGraph(), cacingx, cacingy, cacingx, cacingy-1);
-        //         else
-        //         }
-        //     }
-        // List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
-        // int cellIdx = random.nextInt(surroundingBlocks.size());
-        // Cell block = surroundingBlocks.get(cellIdx);
-        // // System.out.println(surroundingBlocks.size());
+        List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
+        boolean ketemu = false;
+        Cell block = surroundingBlocks.get(0);
+        int xtanah = 0;
+        int ytanah = 0;
 
-        // for(int i = 0;i < surroundingBlocks.size(); i++){
-        //     block = surroundingBlocks.get(i);
-        //     if (block.type != CellType.LAVA && block.type != CellType.DEEP_SPACE
-        //     && unoccupied(block.x,block.y)){
-        //         break;
-        //     }
-        // }
-
-
-        // if (block.type == CellType.AIR) {
-        //     return new MoveCommand(block.x, block.y);
-        // } else if (block.type == CellType.DIRT) {
-        //     return new DigCommand(block.x, block.y);
-        // } else{
-        //     return serang();
-        // }
-        
-        // Worm locTarget = getFirstWormInRange(5);
-        // int kaburX = 0;
-        // int kaburY = 0;
-        // for(int i=15;i>=1;i--){
-        //     if (locTarget != null && locTarget.position.x + i < 33 && locTarget.position.y + i < 33){
-        //         kaburX = locTarget.position.x + i;
-        //         kaburY = locTarget.position.y + i;
-        //         break;
-        //     }
-        // }
-        // return moveOrDig(mapsToGraph(), currentWorm.position.x,currentWorm.position.y, kaburX, kaburY);
-
-    }
-
-    private Command keTemen(){
-        double min = 0;
-        int id_min = 0;
-        for (Worm friend : gameState.myPlayer.worms){
-            double distance = euclideanDistance(currentWorm.position.x,currentWorm.position.y,friend.position.x,friend.position.y);
-            if (distance <= min){
-                min = distance;
-                id_min = friend.id;
+        for(int i = 0; i < surroundingBlocks.size(); i++){
+            block = surroundingBlocks.get(i);
+            // System.out.println("Cell bukan type LAVA? " + (block.type != CellType.LAVA));
+            // System.out.println("Cell bukan type DEEP_SPACE? " + (block.type != CellType.DEEP_SPACE));
+            // System.out.println("Cell bisa ditEMBAK? " + isInEnemyLineOfFire(block));
+            // System.out.println("Cell tidak occupied? " + (unoccupied(block.x,block.y)));
+            // System.out.println("Cell ada di kotak tengah? " + (block.x <= 20 && block.x >= 10 && block.y >= 10 && block.y <= 20));
+            // System.out.println("posisi chachincc != block? " + !(block.x == currentWorm.position.x && block.y == currentWorm.position.y));
+            // System.out.println(currentWorm.position.x + ", " + currentWorm.position.y);
+            // System.out.println(block.x + ", " + block.y);
+            // System.out.println();
+            if (block.type != CellType.LAVA && block.type != CellType.DEEP_SPACE
+                && isInEnemyLineOfFire(block) && unoccupied(block.x,block.y)
+                && block.x <= 20 && block.x >= 10 && block.y >= 10 && block.y <= 20
+                && !(block.x == currentWorm.position.x && block.y == currentWorm.position.y)){
+                    if (block.type == CellType.DIRT){
+                        ketemu = true;
+                        xtanah = block.x;
+                        ytanah = block.y;
+                    }else{
+                        ketemu = true;
+                        break;
+                    }
             }
         }
-        return moveOrDig(mapsToGraph(),currentWorm.position.x,currentWorm.position.y,gameState.myPlayer.worms[id_min-1].position.x,gameState.myPlayer.worms[id_min-1].position.y);
+        if (ketemu) {
+            int opHealth = 0;
+            for(int i=0; i<3; i++) opHealth += gameState.opponents[0].worms[i].health;
+            if (opHealth >= 8 && currentWorm.health < 8) {
+                if (mapsToGraph()[ytanah][xtanah] == 2)
+                    return new DigCommand(xtanah, ytanah);
+                else
+                    return new MoveCommand(block.x, block.y);
+            } else if (opHealth <= 8 && currentWorm.health <= 8) {
+                if (gameState.opponents[0].score >= gameState.myPlayer.score) {
+                    if (mapsToGraph()[block.y][block.x] == 2)
+                        return new DigCommand(block.x, block.y);
+                    else
+                        return new MoveCommand(block.x, block.y);
+                }
+            } else return serang();
+        } else {
+
+        }
+        return serang();
     }
 
     private boolean unoccupied(int x, int y){
