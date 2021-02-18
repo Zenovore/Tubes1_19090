@@ -7,9 +7,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * TODO:
- * lengkapin komen stima greedy
- * ALEX
+ * TODO: * lengkapin komen stima greedy
  */
 
 public class Bot {
@@ -152,12 +150,14 @@ public class Bot {
     /**
      * Metode untuk membantu mempersingkat algoritma metode pathFinding
      * Metode mengecek dan menambahkan apabila titik memenuhi syarat
+     * Mengembalikan queue dengan tambahan Node (jika Node memenuhi ketentuan yang ada)
+     * queue untuk menyimpan perjalanan yang dilakukan
      * @param jalan Alamatpath
      * @param x nilai arah x
      * @param y nilai arah y
-     * @param pinpoint Node terakhir, sebagai parent
-     * @param queuejalan ALEX
-     * @return ALEX
+     * @param pinpoint Node terakhir, sebagai parent dari node (x,y)
+     * @param queuejalan queuenode yang ingin ditambahkan
+     * @return queuejalan sudah ditambahkan 
      */
     private Queue<Node> helperPath(Alamatpath jalan, int x, int y, Node pinpoint, Queue<Node> queuejalan) {
         Node check = jalan.penyimpananjalan[pinpoint.x + x][pinpoint.y + y];
@@ -412,8 +412,32 @@ public class Bot {
         if (matrixmap[apel.get(panjang).y][apel.get(panjang).x] == 2) {
             return new DigCommand(apel.get(panjang).x, apel.get(panjang).y);
         } else {
+            if (isLastWorm() && gameState.currentRound != 1 ) {
+                if (!gameState.prevCommand.contains("move")) {
+                    return new MoveCommand(apel.get(panjang).x, apel.get(panjang).y);
+                }
+                else if (getFirstWormInRange() != null) {
+                    Direction shootDir = resolveDirection(currentWorm.position, getFirstWormInRange().position);
+                    return new ShootCommand(shootDir);
+                } else {
+                    return new DoNothingCommand();
+                }
+            }
             return new MoveCommand(apel.get(panjang).x, apel.get(panjang).y);
         }
+    }
+
+    /**
+     * Metode untuk mengecek jumlah cacing hidup
+     * @return true: sisa 1
+     */
+    private boolean isLastWorm(){
+        for (Worm myWorm : gameState.myPlayer.worms) {
+            if (myWorm.health > 0 && myWorm.id != currentWorm.id) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
