@@ -47,7 +47,13 @@ public class Bot {
      * @return command
      */
     public Command run() {
-        if (currentWorm.health < 30) {
+        int count = 0;
+        for(Worm opp : opponent.worms){
+            if(euclideanDistance(currentWorm.position.x,currentWorm.position.y,opp.position.x,opp.position.y) <= 7){
+                count = count + 1;
+            }
+        }
+        if (currentWorm.health < 20 && count>0){
             return kaburEuy();
         }
         return serang();
@@ -300,10 +306,16 @@ public class Bot {
         isFriendlyFireB = isFriendlyFire1(cellsBB);
         
         // ngabisin bom
-        for (int i = 0; i < 3; i++) {
-            if (opponent.worms[i].health > 0 && canSpecialT(i+1, 5)
-                && isFriendlyFireB
-                && currentWorm.banana.count > 0) {
+        for (int i = 0; i < 3; i++){
+            Set<String> cellsBB2 = constructBananaBombArea(opponent.worms[i].position)
+                .stream()
+                .map(cell -> String.format("%d_%d", cell.x, cell.y))
+                .collect(Collectors.toSet());
+            boolean isFriendlyFireBB2 = isFriendlyFire1(cellsBB2);
+
+            if(opponent.worms[i].health > 0 && canSpecialT(i+1, 5)
+                    && !isFriendlyFireBB2
+                    && currentWorm.banana.count > 0){
                 Position target = opponent.worms[i].position;
                 return new BananaBombCommand(target.x,target.y);
             }
@@ -346,19 +358,26 @@ public class Bot {
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
                 .collect(Collectors.toSet());
 
+        isFriendlyFire = isFriendlyFire0(canAttack, locTarget);
+        isFriendlyFireS = isFriendlyFire1(cellsSB);
         if (cells.contains(oppPosition) && opponent.worms[n-1].health > 0) canAttack = true;
         if (canSpecialT(n,5) && currentWorm.snow.count > 0
                 && opponent.worms[n-1].health > 0 && opponent.worms[n-1].sampeMeleleh == 0)
                 canSnowBall = true;
         
-        isFriendlyFire = isFriendlyFire0(canAttack, locTarget);
-        isFriendlyFireS = isFriendlyFire1(cellsSB);
                 
         // ngabisin snobol
-        for (int i = 0; i < 3; i++) {
-            if (opponent.worms[i].health > 0 && canSpecialT(i+1, 5)
-                && currentWorm.snow.count > 0 && isFriendlyFireS
-                && opponent.worms[i].sampeMeleleh == 0) {
+        for (int i = 0; i < 3; i++){
+            int count = 0;
+            Set<String> cellsSB2 = constructSnowballArea(opponent.worms[i].position)
+                .stream()
+                .map(cell -> String.format("%d_%d", cell.x, cell.y))
+                .collect(Collectors.toSet());
+            boolean isFriendlyFireSB2 = isFriendlyFire1(cellsSB2);
+
+            if(opponent.worms[i].health > 0 && canSpecialT(i+1, 5)
+                && currentWorm.snow.count > 0 && !isFriendlyFireSB2
+                && opponent.worms[i].sampeMeleleh == 0 && count > 0){
                 Position target = opponent.worms[i].position;
                 return new SnowballCommand(target.x,target.y);
             }
@@ -539,6 +558,9 @@ public class Bot {
 
     /**
      * Metode untuk menambahkan cell ke arraylist
+     * @param target posisi target
+     * @param x banyak satuan arah horizontal yang ingin ditambah/dikurang
+     * @param y banyak satuan arah vertikal yang ingin ditambah/dikurang
      * @param area list yang ingin diappend
      * @return list
      */
@@ -686,8 +708,8 @@ public class Bot {
      * @return true: x, y ada di peta
      */
     private boolean isValidCoordinate(int x, int y) {
-        return x >= 0 && x < gameState.mapSize
-                && y >= 0 && y < gameState.mapSize;
+        return x >= 0 && x < 33 &&
+                y >= 0 && y < 33;
     }
 
     /**
