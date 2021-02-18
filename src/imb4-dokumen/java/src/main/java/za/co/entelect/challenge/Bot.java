@@ -6,8 +6,14 @@ import za.co.entelect.challenge.enums.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * TODO:
+ * lengkapin komen stima greedy
+ * ALEX
+ */
+
 public class Bot {
-    private Random random;  
+    private Random random;
     private GameState gameState;
     private Opponent opponent;
     private MyWorm currentWorm;
@@ -36,27 +42,33 @@ public class Bot {
                 .get();
     }
 
-    private int cariPanjang(ArrayList<Node> path){
-        int i = 0;
-        if(path.get(i).parent == null) return 0;
-        while(path.get(i).parent != null) i++;
-        return i-1;
-    }
-
+    /**
+     * Metode untuk mengeksekusi bot
+     * @return command
+     */
     public Command run() {
-        if (currentWorm.health < 30){
+        if (currentWorm.health < 30) {
             return kaburEuy();
         }
         return serang();
     }
-    
-    private Command serang(){
+
+    /**
+     * Metode untuk menyerang musuh berdasarkan prioritas:
+     * Agent, Technologist, Commando
+     * @return command
+     */
+    private Command serang() {
         if (opponent.worms[1].health > 0) return helperSerang(1);
         else if (opponent.worms[2].health > 0) return helperSerang(2);
         else if (opponent.worms[0].health > 0) return helperSerang(0);
         return new DoNothingCommand();
     }
-    
+
+    /**
+     * Metode untuk menyerang musuh sesuai dengan profession currentWorm
+     * @return command
+     */
     private Command helperSerang(int i) {
         if (currentWorm.prof == Profession.COMMANDO) return huntByIDCommando(i+1);
         else if (currentWorm.prof == Profession.AGENT) return huntByIDAgent(i+1);
@@ -64,8 +76,29 @@ public class Bot {
         return new DoNothingCommand();
     }
 
-    private ArrayList<Node> pathFinding(int[][] peta, int x, int y, int xend, int yend){
-        Alamatpath jalan = new Alamatpath(x,y,xend,yend,33);
+    /**
+     * Metode untuk mencari panjang path
+     * @param path bertipe Alamatpath
+     * @return panjang path atau banyak node
+     */
+    private int cariPanjang(ArrayList<Node> path) {
+        int i = 0;
+        if (path.get(i).parent == null) return 0;
+        while(path.get(i).parent != null) i++;
+        return i-1;
+    }
+
+    /**
+     * Metode untuk mencari jalan terpendek (Djikstra)
+     * @param peta peta game dalam bentuk matriks integer
+     * @param x titik x awal
+     * @param yend titik y awal
+     * @param x titik x tujuan
+     * @param yend titik y tujuan
+     * @return ArrayList node dari asal ke tujuan
+     */
+    private ArrayList<Node> pathFinding(int[][] peta, int x, int y, int xend, int yend) {
+        Alamatpath jalan = new Alamatpath(x, y, xend, yend, 33);
         // INISIASI VALUE DARI PETA MATRIX PADA NODE
         for (int i = 0; i < 33; i++)
             for (int j = 0; j < 33; j++)
@@ -80,15 +113,15 @@ public class Bot {
         Queue<Node> queuejalan = new PriorityQueue(33, adjacencyComparator);
         queuejalan.add(jalan.start);
 
-        while (queuejalan.size() > 0){
+        while (queuejalan.size() > 0) {
             Node pinpoint = queuejalan.remove();
             // ALGORITMA UNTUK MENGECEK PERJALANAN KE 8 ARAH
-            if (pinpoint.y - 1 >= 0){
+            if (pinpoint.y - 1 >= 0) {
                 queuejalan = helperPath(jalan, 0, -1, pinpoint, queuejalan); // UP
                 if (pinpoint.x + 1 < 33) queuejalan = helperPath(jalan, 1, -1, pinpoint, queuejalan); // RIGHT
                 if (pinpoint.x - 1 >= 0) queuejalan = helperPath(jalan, -1, -1, pinpoint, queuejalan); // LEFT
             }
-            if (pinpoint.y + 1 < 33){ // DOWN
+            if (pinpoint.y + 1 < 33) { // DOWN
                 queuejalan = helperPath(jalan, 0, 1, pinpoint, queuejalan); // DOWN
                 if (pinpoint.x + 1 < 33) queuejalan = helperPath(jalan, 1, 1, pinpoint, queuejalan); // RIGHT
                 if (pinpoint.x - 1 >= 0) queuejalan = helperPath(jalan, -1, 1, pinpoint, queuejalan); // LEFT
@@ -109,10 +142,20 @@ public class Bot {
         return path;
     }
 
-    private Queue<Node> helperPath(Alamatpath jalan, int x, int y, Node pinpoint, Queue<Node> queuejalan){
+    /**
+     * Metode untuk membantu mempersingkat algoritma metode pathFinding
+     * Metode mengecek dan menambahkan apabila titik memenuhi syarat
+     * @param jalan Alamatpath
+     * @param x nilai arah x
+     * @param y nilai arah y
+     * @param pinpoint Node terakhir, sebagai parent
+     * @param queuejalan ALEX
+     * @return ALEX
+     */
+    private Queue<Node> helperPath(Alamatpath jalan, int x, int y, Node pinpoint, Queue<Node> queuejalan) {
         Queue<Node> kiuw = queuejalan;
         Node check = jalan.penyimpananjalan[pinpoint.x + x][pinpoint.y + y];
-        if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value ){
+        if (check.value != 0 && !check.visited && check.jarak > pinpoint.jarak + check.value) {
             check.jarak = pinpoint.jarak + check.value;
             check.parent = pinpoint;
             kiuw.add(check);
@@ -120,9 +163,13 @@ public class Bot {
         return kiuw;
     }
 
-    private int[][] mapsToGraph(){
+    /**
+     * Metode untuk mengubah peta dari gamestate ke matriks integer
+     * @return map dalam bentuk matriks integer
+     */
+    private int[][] mapsToGraph() {
         Cell[][] apel = gameState.map;
-        int graf[][] = new int [33][33];
+        int graf[][] = new int[33][33];
         for (int i = 0; i < 33; i++) {
             for (int j = 0; j < 33; j++) {
                 // Don't include the current position
@@ -132,13 +179,18 @@ public class Bot {
                 else graf[i][j]= 0;
             }
         }
-        for(int k=0; k<3; k++){
+        for (int k = 0; k < 3; k++) {
             graf[getWormLocationByID(k+1).x][getWormLocationByID(k+1).y] = 69;
-            graf[gameState.myPlayer.worms[k].position.x][gameState.myPlayer.worms[k].position.y] = 69;
+            graf[gameState.myPlayer.worms[k].position.x][gameState.myPlayer.worms[k].position.y] = 420;
         }
         return graf;
     }
 
+    /**
+     * Metode untuk mencari cacing di sekitar cacing currentWorm
+     * @param range range tembak cacing (8 arah)
+     * @return worm dalam range tembak cacing
+     */
     private Worm getFirstWormInRange(int range) {
         Set<String> cells = constructFireDirectionLines(range)
                 .stream()
@@ -155,6 +207,13 @@ public class Bot {
         return null;
     }
 
+    /**
+     * Metode untuk mencari cacing pemain di sekitar cacing musuh
+     * @param range range tembak cacing musuh
+     * @param block cell lokasi cacing pemain atau cacing target
+     * @param id id cacing musuh - 1
+     * @return true: ada cacing pemain yang dapat ditembak
+     */
     private boolean getFirstWormInRangeReversed(int range, Cell block, int id) {
         Set<String> cells = constructFireDirectionLinesReversed(range, id)
                 .stream()
@@ -167,10 +226,15 @@ public class Bot {
         return false;
     }
 
-    private Position getWormLocationByID(int n){
+    /**
+     * Metode untuk mencari lokasi cacing musuh menggunakan id
+     * @param n id cacing musuh
+     * @return posisi cacing musuh dengan id n
+     */
+    private Position getWormLocationByID(int n) {
         Position locTarget = new Position();
-        for (Worm enemyWorm : opponent.worms){
-            if(enemyWorm.id == n){
+        for (Worm enemyWorm : opponent.worms) {
+            if (enemyWorm.id == n) {
                 locTarget.x = enemyWorm.position.x;
                 locTarget.y = enemyWorm.position.y;
             }
@@ -178,6 +242,11 @@ public class Bot {
         return locTarget; 
     }
 
+    /**
+     * Metode untuk menyerang musuh jika cacing berprofesi Commando
+     * @param n id cacing musuh yang ingin diserang
+     * @return command
+     */
     private Command huntByIDCommando(int n) {
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
@@ -185,7 +254,7 @@ public class Bot {
         boolean isFriendlyFire = false;
 
         Worm opp = getFirstWormInRange(4);
-        if (opp != null && !isFriendlyFire0(true, opp.position)){
+        if (opp != null && !isFriendlyFire0(true, opp.position)) {
             Direction shootdir = resolveDirection(currentWorm.position, opp.position);
             return new ShootCommand(shootdir);
         }
@@ -196,7 +265,7 @@ public class Bot {
 
         isFriendlyFire = isFriendlyFire0(canAttack, locTarget);
         
-        if (!isFriendlyFire && canAttack){
+        if (!isFriendlyFire && canAttack) {
             Direction shootdir = resolveDirection(currentWorm.position, locTarget);
             return new ShootCommand(shootdir);            
         } else {
@@ -205,6 +274,11 @@ public class Bot {
         }
     }
 
+    /**
+     * Metode untuk menyerang musuh jika cacing berprofesi Agent
+     * @param n id cacing musuh yang ingin diserang
+     * @return command
+     */
     private Command huntByIDAgent(int n) {
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
@@ -214,7 +288,6 @@ public class Bot {
         boolean canBananaBomb = false;
 
         Set<String> cells = makeCells(4);
-        // Set<String> cellsB = = makeCells(5);
         Set<String> cellsBB = constructBananaBombArea(locTarget)
                 .stream()
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
@@ -227,22 +300,22 @@ public class Bot {
         isFriendlyFireB = isFriendlyFire1(cellsBB);
         
         // ngabisin bom
-        for (int i = 0; i < 3; i++){
-            if(opponent.worms[i].health > 0 && canSpecialT(i+1, 5)
+        for (int i = 0; i < 3; i++) {
+            if (opponent.worms[i].health > 0 && canSpecialT(i+1, 5)
                 && isFriendlyFireB
-                && currentWorm.banana.count > 0){
+                && currentWorm.banana.count > 0) {
                 Position target = opponent.worms[i].position;
                 return new BananaBombCommand(target.x,target.y);
             }
         }
 
         Worm opp = getFirstWormInRange(4);
-        if (opp != null && isFriendlyFire0(true, opp.position)){
+        if (opp != null && isFriendlyFire0(true, opp.position)) {
             Direction shootdir = resolveDirection(currentWorm.position, opp.position);
             return new ShootCommand(shootdir);
         }
 
-        if (canBananaBomb && !isFriendlyFireB){
+        if (canBananaBomb && !isFriendlyFireB) {
             Position target = getWormLocationByID(n);
             return new BananaBombCommand(target.x,target.y);
         } else if (canAttack && !isFriendlyFire) {
@@ -254,6 +327,11 @@ public class Bot {
         }
     }
 
+    /**
+     * Metode untuk menyerang musuh jika cacing berprofesi Technologist
+     * @param n id cacing musuh yang ingin diserang
+     * @return command
+     */
     private Command huntByIDTechnologist(int n) {
         Position locTarget = getWormLocationByID(n);
         String oppPosition = String.format("%d_%d", locTarget.x, locTarget.y);
@@ -263,7 +341,6 @@ public class Bot {
         boolean canSnowBall = false;
 
         Set<String> cells = makeCells(4);
-        // Set<String> cellsS = makeCells(5);
         Set<String> cellsSB = constructSnowballArea(locTarget)
                 .stream()
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
@@ -278,22 +355,22 @@ public class Bot {
         isFriendlyFireS = isFriendlyFire1(cellsSB);
                 
         // ngabisin snobol
-        for (int i = 0; i < 3; i++){
-            if(opponent.worms[i].health > 0 && canSpecialT(i+1, 5)
+        for (int i = 0; i < 3; i++) {
+            if (opponent.worms[i].health > 0 && canSpecialT(i+1, 5)
                 && currentWorm.snow.count > 0 && isFriendlyFireS
-                && opponent.worms[i].sampeMeleleh == 0){
+                && opponent.worms[i].sampeMeleleh == 0) {
                 Position target = opponent.worms[i].position;
                 return new SnowballCommand(target.x,target.y);
             }
         }
 
         Worm opp = getFirstWormInRange(4);
-        if (opp != null && !isFriendlyFire0(true, opp.position)){
+        if (opp != null && !isFriendlyFire0(true, opp.position)) {
             Direction shootdir = resolveDirection(currentWorm.position, opp.position);
             return new ShootCommand(shootdir);
         }
 
-        if (canSnowBall && !isFriendlyFireS){
+        if (canSnowBall && !isFriendlyFireS) {
             Position target = getWormLocationByID(n);
             return new SnowballCommand(target.x,target.y);
         } else if (canAttack && !isFriendlyFire) {
@@ -305,7 +382,16 @@ public class Bot {
         }
     }
 
-    private Command moveOrDig(int[][] matrixmap, int x, int y, int xt, int yt){
+    /**
+     * Metode untuk melakukan command move atau dig
+     * @param matrixmap peta dalam bentuk matriks integer
+     * @param x posisi x awal
+     * @param y posisi y awal
+     * @param xt posisi x akhir
+     * @param yt posisi y akhir
+     * @return command move atau dig
+     */
+    private Command moveOrDig(int[][] matrixmap, int x, int y, int xt, int yt) {
         ArrayList<Node> apel = pathFinding(matrixmap, x, y, xt, yt);
         int panjang = cariPanjang(apel);
         if (matrixmap[apel.get(panjang).y][apel.get(panjang).x] == 2) {
@@ -315,14 +401,27 @@ public class Bot {
         }
     }
 
-    private Boolean canSpecialT(int target, int n){
-        if(euclideanDistance(currentWorm.position.x,currentWorm.position.y,
+    /**
+     * Metode untuk mengecek apakah cacing dapat melakukan
+     * snowball atau banana bomb sesuai dengan jarak euclidean
+     * @param target id cacing musuh
+     * @param n jarak euclidean maksimum
+     * @return true: jarak cacing target ke cacing pemain <= n
+     */
+    private Boolean canSpecialT(int target, int n) {
+        if (euclideanDistance(currentWorm.position.x,currentWorm.position.y,
             gameState.opponents[0].worms[target-1].position.x,
             gameState.opponents[0].worms[target-1].position.y) <= n)
             return true;
         return false;
     }
 
+    /**
+     * Metode untuk membentuk semua garis tembak yang memungkinkan
+     * Metode digunakan jika ingin mencari semua garis tembak dari cacing pemain
+     * @param range jarak cell maksimum
+     * @return semua arah tembak yang memungkinkan
+     */
     private List<List<Cell>> constructFireDirectionLines(int range) {
         List<List<Cell>> directionLines = new ArrayList<>();
         for (Direction direction : Direction.values()) {
@@ -341,6 +440,12 @@ public class Bot {
         return directionLines;
     }
 
+    /**
+     * Metode untuk membentuk semua garis tembak yang memungkinkan
+     * Metode digunakan jika ingin mencari semua garis tembak dari cacing musuh
+     * @param range jarak cell maksimum
+     * @return semua arah tembak yang memungkinkan
+     */
     private List<List<Cell>> constructFireDirectionLinesReversed(int range, int id) {
         List<List<Cell>> directionLines = new ArrayList<>();
         for (Direction direction : Direction.values()) {
@@ -358,8 +463,13 @@ public class Bot {
         }
         return directionLines;
     }
-    
-    private Set<String> makeCells(int n){
+
+    /**
+     * Metode untuk membuat set dari semua arah tembak cacing yang memungkinkan
+     * @param n range tembak cacing
+     * @return set string dari semua cell dalam bentuk string x_y
+     */
+    private Set<String> makeCells(int n) {
         return constructFireDirectionLines(n)
                 .stream()
                 .flatMap(Collection::stream)
@@ -367,21 +477,41 @@ public class Bot {
                 .collect(Collectors.toSet());
     }
 
-    private Set<String> makeLine(Direction shootDir){
+    /**
+     * Metode untuk membuat set dari satu arah tembak cacing yang memungkinkan
+     * Metode digunakan untuk membuat arah tembak dari cacing pemain
+     * @param shootDir arah tembak cacing pemain
+     * @return set string dari semua cell dalam bentuk string x_y
+     */
+    private Set<String> makeLine(Direction shootDir) {
         return constructShootLine(shootDir)
                 .stream()
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
                 .collect(Collectors.toSet());
     }
 
-    private Set<String> makeLineEnemy(Direction shootDir, int enemyx, int enemyy){
+    /**
+     * Metode untuk membuat set dari satu arah tembak cacing yang memungkinkan
+     * Metode digunakan untuk membuat arah tembak dari cacing musuh
+     * @param shootDir arah tembak cacing musuh
+     * @param enemyx posisi x musuh
+     * @param enemyy posisi y musuh
+     * @return set string dari semua cell dalam bentuk string x_y
+     */
+    private Set<String> makeLineEnemy(Direction shootDir, int enemyx, int enemyy) {
         return constructShootLineEnemy(shootDir, enemyx, enemyy)
                 .stream()
                 .map(cell -> String.format("%d_%d", cell.x, cell.y))
                 .collect(Collectors.toSet());
     }
 
-    private ArrayList<Cell> constructBananaBombArea(Position target){
+    /**
+     * Metode untuk membuat kumpulan cell yang terkena damage
+     * sebuah banana bomb dalam sebuah ronde
+     * @param target posisi target cacing yang ingin dibom
+     * @return semua cell yang dapat damage banana bomb
+     */
+    private ArrayList<Cell> constructBananaBombArea(Position target) {
         ArrayList<Cell> area = new ArrayList<>();
         for (int x = -1; x <= 1; x++)
             for (int y = -1; y <= 1; y++)
@@ -393,7 +523,13 @@ public class Bot {
         return area;
     }
 
-    private ArrayList<Cell> constructSnowballArea(Position target){
+    /**
+     * Metode untuk membuat kumpulan cell yang terkena efek
+     * sebuah snowball dalam sebuah ronde
+     * @param target posisi target cacing yang ingin dibom
+     * @return semua cell yang dapat efek  snowball
+     */
+    private ArrayList<Cell> constructSnowballArea(Position target) {
         ArrayList<Cell> area = new ArrayList<>();
         for (int x = -1; x <= 1; x++)
             for (int y = -1; y <= 1;y++)
@@ -401,14 +537,25 @@ public class Bot {
         return area;
     }
 
-    private ArrayList<Cell> helpeg(Position target, int x, int y, ArrayList<Cell> area){
-        if (isValidCoordinate(target.x, target.y)) area.add(gameState.map[target.y+y][target.x+x]);
+    /**
+     * Metode untuk menambahkan cell ke arraylist
+     * @param area list yang ingin diappend
+     * @return list
+     */
+    private ArrayList<Cell> helpeg(Position target, int x, int y, ArrayList<Cell> area) {
+        if (isValidCoordinate(target.x+x, target.y+y)) area.add(gameState.map[target.y+y][target.x+x]);
         return area;
     }
-    
-    private ArrayList<Cell> constructShootLine(Direction dir){
+
+    /**
+     * Metode untuk membuat list garis tembak sesuai dengan
+     * arah tembakan cacing pemain
+     * @param dir arah tembakan cacing pemain
+     * @return list cell yang ada dalam arah tembakan cacing pemain
+     */
+    private ArrayList<Cell> constructShootLine(Direction dir) {
         ArrayList<Cell> line = new ArrayList<>();
-        for(Direction direction : Direction.values()) {
+        for (Direction direction : Direction.values()) {
             if (direction == dir) {
                 line = direction.x != 0 && direction.y != 0 ?
                         helpep(4, direction.x, direction.y, line):
@@ -417,17 +564,33 @@ public class Bot {
         }
         return line;
     }
-    
-    private ArrayList<Cell> helpep(int range, int x, int y, ArrayList<Cell> line){
-        for(int i = 1; i < range; i++)
+
+    /**
+     * Metode untuk memambahkan cell menjadi line
+     * @param range range tembak maksimum
+     * @param x satuan unit arah horizontal
+     * @param y satuan unit arah vertikal
+     * @param line arraylist
+     * @return garis tembak
+     */
+    private ArrayList<Cell> helpep(int range, int x, int y, ArrayList<Cell> line) {
+        for (int i = 1; i < range; i++)
             if (isValidCoordinate(currentWorm.position.x + i*x, currentWorm.position.y + i*y))
                 line.add(gameState.map[currentWorm.position.y + i*y][currentWorm.position.x + i*x]);
         return line;
     }
 
-    private ArrayList<Cell> constructShootLineEnemy(Direction dir, int enemyx, int enemyy){
+    /**
+     * Metode untuk membuat list garis tembak sesuai dengan
+     * arah tembakan cacing musuh
+     * @param dir arah tembakan cacing pemain
+     * @param enemyx posisi x musuh
+     * @param enemyy posisi y musuh
+     * @return list cell yang ada dalam arah tembakan cacing musuh
+     */
+    private ArrayList<Cell> constructShootLineEnemy(Direction dir, int enemyx, int enemyy) {
         ArrayList<Cell> line = new ArrayList<>();
-        for(Direction direction : Direction.values()) {
+        for (Direction direction : Direction.values()) {
             if (direction == dir) {
                 line = direction.x != 0 && direction.y != 0 ?
                         helpepEnemy(4, direction.x, direction.y, line, enemyx, enemyy):
@@ -436,38 +599,65 @@ public class Bot {
         }
         return line;
     }
-    
-    private ArrayList<Cell> helpepEnemy(int range, int x, int y, ArrayList<Cell> line, int enemyx, int enemyy){
-        for(int i = 1; i < range; i++) {
-            if (isValidCoordinate(enemyx + i*x, enemyy + i*y)) {
+
+    /**
+     * Metode untuk memambahkan cell menjadi line
+     * @param range range tembak maksimum
+     * @param x satuan unit arah horizontal
+     * @param y satuan unit arah vertikal
+     * @param line arraylist
+     * @param enemyx posisi x musuh
+     * @param enemyy posisi y musuh
+     * @return garis tembak
+     */
+    private ArrayList<Cell> helpepEnemy(int range, int x, int y, ArrayList<Cell> line, int enemyx, int enemyy) {
+        for (int i = 1; i < range; i++)
+            if (isValidCoordinate(enemyx + i*x, enemyy + i*y))
                 line.add(gameState.map[enemyy + i*y][enemyx + i*x]);
-            }
-        }
         return line;
     }
 
-    private boolean isFriendlyFire0(boolean canAttack, Position locTarget){
-        if (canAttack){
+    /**
+     * Metode untuk mengecek apakah tembakan cacing pemain
+     * dapat melukai cacing teman lainnya
+     * @param canAttack kondisi terdapat cacing musuh di 8 arah tembak cacing
+     * @param locTarget posisi tujuan tembak
+     * @return true: tidak ada cacing teman dalam garis tembak cacing pemain
+     */
+    private boolean isFriendlyFire0(boolean canAttack, Position locTarget) {
+        if (canAttack) {
             Direction shootDir = resolveDirection(currentWorm.position, locTarget);
             Set<String> myline = makeLine(shootDir);
 
-            for (int i=0;i<3;i++){
+            for (int i = 0; i < 3; i++) {
                 String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
-                if(myline.contains(myPos)) return true;
+                if (myline.contains(myPos)) return true;
             }
         }
         return false;
     }
 
-    private boolean isFriendlyFire1(Set<String> cells){
-        for (int i=0;i<3;i++){
+    /**
+     * Metode untuk mengecek apakah banana bomb atau snowball dapat
+     * melukai atau memberikan dampak pada cacing teman
+     * @param cells area yang dapat ditarget oleh banana bomb atau snowball
+     * @return true: tidak ada cacing teman dalam area cells
+     */
+    private boolean isFriendlyFire1(Set<String> cells) {
+        for (int i = 0; i < 3; i++) {
             String myPos = String.format("%d_%d", gameState.myPlayer.worms[i].position.x, gameState.myPlayer.worms[i].position.y);
-            if(cells.contains(myPos) && gameState.myPlayer.worms[i].health > 0)
+            if (cells.contains(myPos) && gameState.myPlayer.worms[i].health > 0)
                 return true;
         }
         return false;
     }
 
+    /**
+     * Metode untuk mencari semua cell di sekitar posisi x dan y
+     * @param x posisi x
+     * @param y posisi y
+     * @return semua cell di sekitar cell posisi x dan y
+     */
     private ArrayList<Cell> getSurroundingCells(int x, int y) {
         ArrayList<Cell> cells = new ArrayList<>();
         for (int i = x - 1; i <= x + 1; i++)
@@ -477,15 +667,35 @@ public class Bot {
         return cells;
     }
 
+    /**
+     * Metode untuk mencari jarak euclidean
+     * @param aX x a
+     * @param aY y a
+     * @param bX x b
+     * @param bY y b
+     * @return jarak euclidean
+     */
     private int euclideanDistance(int aX, int aY, int bX, int bY) {
         return (int) (Math.sqrt(Math.pow(aX - bX, 2) + Math.pow(aY - bY, 2)));
     }
 
+    /**
+     * Metode untuk memvalidasi posisi x, y ada di peta atau tidak
+     * @param x posisi x
+     * @param y posisi y
+     * @return true: x, y ada di peta
+     */
     private boolean isValidCoordinate(int x, int y) {
         return x >= 0 && x < gameState.mapSize
                 && y >= 0 && y < gameState.mapSize;
     }
 
+    /**
+     * Metode untuk mencari arah mata angin dari posisi a ke posisi b
+     * @param a posisi awal
+     * @param b posisi akhir
+     * @return arah mata angin
+     */
     private Direction resolveDirection(Position a, Position b) {
         StringBuilder builder = new StringBuilder();
         int verticalComponent = b.y - a.y;
@@ -496,14 +706,22 @@ public class Bot {
 
         if (horizontalComponent < 0) builder.append('W');
         else if (horizontalComponent > 0) builder.append('E');
-        try{
+        try {
             return Direction.valueOf(builder.toString());
-        } catch (IllegalArgumentException i){
+        } catch (IllegalArgumentException i) {
             return null;
         }        
     }
 
-    private boolean isInEnemyLineOfFire(Cell block){
+    /**
+     * Metode untuk mengecek apakah posisi block dapat ditembak oleh musuh atau tidak
+     * Metode digunakan untuk mengecek apakah cell block tujuan dapat ditembak
+     * atau tidak oleh semua musuh yang hidup dan apakah cell tujuan dalam
+     * garis posisi currentWorm dengan musuh
+     * @param block
+     * @return true: block dapat ditembak oleh cacing musuh yang berjalan sekarang dan akan miss
+     */
+    private boolean isInEnemyLineOfFire(Cell block) {
         Position locTarget = new Position();
         locTarget.x = block.x;
         locTarget.y = block.y;
@@ -511,52 +729,65 @@ public class Bot {
         boolean a = false;
         boolean b = false;
         boolean c = false;
-        for(int k=0; k<3; k++){
-                if(opponent.worms[k].health > 0 && getFirstWormInRangeReversed(5,block,k)){
+        for (int k = 0; k < 3; k++) {
+            if (opponent.worms[k].health > 0 && getFirstWormInRangeReversed(5,block,k)) {
                 Direction shootDir = resolveDirection(opponent.worms[k].position, locTarget);
-                if (shootDir != null){
+                if (shootDir != null) {
                     Set<String> myline = makeLineEnemy(shootDir, opponent.worms[k].position.x, opponent.worms[k].position.y);
                     String myPos = String.format("%d_%d", locTarget.x, locTarget.y);
                     String wormPos = String.format("%d_%d",currentWorm.position.x,currentWorm.position.y);
-                    if(k == i && myline.contains(myPos) && !myline.contains(wormPos)) {
+                    if (k == i && myline.contains(myPos) && !myline.contains(wormPos)) {
                         // ini kalo musuhnya yg skrg bakal jalan, trus dia bisa nembak kita
-                        // dan posisi tujuan kita ga sama kek posisi skrg, kita buat true
-                        if(k == 0) a = true;
-                        if(k == 1) b = true;
-                        if(k == 2) c = true;
+                        // dan arah kita ke dia dan arah kita ke tujuan ga sama, kita buat true
+                        if (k == 0) a = true;
+                        if (k == 1) b = true;
+                        if (k == 2) c = true;
                     }
-                    if(k != i && myline.contains(myPos)) {
+                    if (k != i && myline.contains(myPos)) {
                         // ini kalo musuhnya bukan yg skrg bakal jalan
-                        if(k == 0) a = true;
-                        if(k == 1) b = true;
-                        if(k == 2) c = true;
+                        if (k == 0) a = true;
+                        if (k == 1) b = true;
+                        if (k == 2) c = true;
                     }
                 }
-            }else if (opponent.worms[k].health <= 0) {
-                if(k == 0) a = true;
-                if(k == 1) b = true;
-                if(k == 2) c = true;
+            } else if (opponent.worms[k].health <= 0) {
+                if (k == 0) a = true;
+                if (k == 1) b = true;
+                if (k == 2) c = true;
             }
         }
         return a && b && c;
     }
 
-
-    private Command kaburEuyHelper(int lower, int upper){
+    /**
+     * Metode untuk menghindar dari (serangan) musuh
+     * Metode ini mencari cell di sekitar posisi currentWorm
+     * Jika cell sekitar cacing memenuhi syarat maka cacing akan move atau dig ke cell tersebut
+     * Jika tidak maka cacing akan menyerang musuh
+     * Syarat cell tujuan: cell tidak diduduki oleh cacing lain, cell bukan lava atau deep space,
+     * berada di dalam range lower dan upper, jauh dari lava, berada dalam jangkauan tembak musuh
+     * selanjutnya.
+     * Jika syarat terakhir (berada dalam jangkauan tembak musuh selanjutnya) tidak terpenuhi
+     * maka cacing akan menjauhi cacing musuh.
+     * @param lower
+     * @param upper
+     * @return command
+     */
+    private Command kaburEuyHelper(int lower, int upper) {
         List<Cell> surroundingBlocks = getSurroundingCells(currentWorm.position.x, currentWorm.position.y);
         boolean ketemu = false;
         Cell block = surroundingBlocks.get(0);
         int xtanah = 0;
         int ytanah = 0;
 
-        for(int i = 0; i < surroundingBlocks.size(); i++){
+        for (int i = 0; i < surroundingBlocks.size(); i++) {
             block = surroundingBlocks.get(i);
             if (block.type != CellType.LAVA && block.type != CellType.DEEP_SPACE
                 && isInEnemyLineOfFire(block) && unoccupied(block.x,block.y)
                 && block.x <= upper && block.x >= lower && block.y >= lower && block.y <= upper
                 && isAwayFromLava(block)
-                && !(block.x == currentWorm.position.x && block.y == currentWorm.position.y)){
-                if (block.type == CellType.DIRT){
+                && !(block.x == currentWorm.position.x && block.y == currentWorm.position.y)) {
+                if (block.type == CellType.DIRT) {
                     ketemu = true;
                     xtanah = block.x;
                     ytanah = block.y;
@@ -568,17 +799,17 @@ public class Bot {
         }
         if (ketemu && currentWorm.health <= 25) {
             if (block.type == CellType.DIRT && mapsToGraph()[ytanah][xtanah] == 2)
-            return new DigCommand(xtanah, ytanah);
+                return new DigCommand(xtanah, ytanah);
             else
-            return new MoveCommand(block.x, block.y);
+                return new MoveCommand(block.x, block.y);
         }
-        for(int i = 0; i < surroundingBlocks.size(); i++){
+        for (int i = 0; i < surroundingBlocks.size(); i++) {
             block = surroundingBlocks.get(i);
             if (block.type != CellType.LAVA && block.type != CellType.DEEP_SPACE
                 && unoccupied(block.x,block.y) && isAwayFromLava(block) && isAwayFromEnemy(block)
                 && block.x <= upper && block.x >= lower && block.y >= lower && block.y <= upper
-                && !(block.x == currentWorm.position.x && block.y == currentWorm.position.y)){
-                if (block.type == CellType.DIRT){
+                && !(block.x == currentWorm.position.x && block.y == currentWorm.position.y)) {
+                if (block.type == CellType.DIRT) {
                     ketemu = true;
                     xtanah = block.x;
                     ytanah = block.y;
@@ -590,14 +821,18 @@ public class Bot {
         }
         if (ketemu && currentWorm.health <= 25) {
             if (block.type == CellType.DIRT && mapsToGraph()[ytanah][xtanah] == 2)
-            return new DigCommand(xtanah, ytanah);
+                return new DigCommand(xtanah, ytanah);
             else
-            return new MoveCommand(block.x, block.y);
+                return new MoveCommand(block.x, block.y);
         }
         return serang();
     }
 
-    private Command kaburEuy(){
+    /**
+     * Metode untuk menghindar dari serangan musuh
+     * @return command
+     */
+    private Command kaburEuy() {
         // insert lava function, but kuli
         if (gameState.currentRound < 100) return kaburEuyHelper(4, 29);
         else if (gameState.currentRound < 120) return kaburEuyHelper(8, 20);
@@ -609,8 +844,13 @@ public class Bot {
         else if (gameState.currentRound < 290) return kaburEuyHelper(12, 20);
         else return kaburEuyHelper(13, 19);
     }
-    
-    private boolean isAwayFromEnemy(Cell block){
+
+    /**
+     * Metode untuk mengecek apakah cell block tujuan sama dengan posisi cacing musuh
+     * @param block
+     * @return true: block bukan merupakan posisi cacing musuh
+     */
+    private boolean isAwayFromEnemy(Cell block) {
         int idMusuh = gameState.opponents[0].currentWormId -1;
         if (block.x  == gameState.opponents[0].worms[idMusuh].position.x
             && block.y  == gameState.opponents[0].worms[idMusuh].position.y)
@@ -618,22 +858,33 @@ public class Bot {
         return true;
     }    
 
-    private boolean isAwayFromLava(Cell block){
+    /**
+     * Metode untuk mencari apakah cell sekitar block ada lava
+     * @param block
+     * @return true: cell sekitar block tidak ada lava
+     */
+    private boolean isAwayFromLava(Cell block) {
         if (gameState.currentRound < 280 && gameState.currentRound > 100) {
             List<Cell> surroundingBlocks = getSurroundingCells(block.x, block.y);
-            for(int i = 0; i < surroundingBlocks.size(); i++)
-                if (surroundingBlocks.get(i).type == CellType.LAVA)
-                return false;
+            for (int i = 0; i < surroundingBlocks.size(); i++)
+                if (surroundingBlocks.get(i).type == CellType.LAVA) 
+                    return false;
         }
         return true;
     }
 
-    private boolean unoccupied(int x, int y){
-        for(int i=0; i<3; i++){
-            if((x == gameState.opponents[0].worms[i].position.x
+    /**
+     * Metode untuk mengecek apakah posisi x, y pada peta ditempati oleh sebuah cacing
+     * @param x posisi x
+     * @param y posisi y
+     * @return true: posisi x, y tidak ditempati oleh cacing lain
+     */
+    private boolean unoccupied(int x, int y) {
+        for (int i = 0; i < 3; i++) {
+            if ((x == gameState.opponents[0].worms[i].position.x
                 && y == gameState.opponents[0].worms[i].position.y)
                 || (x == gameState.myPlayer.worms[i].position.x
-                && y == gameState.myPlayer.worms[i].position.y)){
+                && y == gameState.myPlayer.worms[i].position.y)) {
                 return false;
             }
         }
