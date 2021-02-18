@@ -33,5 +33,3 @@ public class Worm{
     @SerializedName("snowballs")
     public SnowBalls snow;
 }
-
-
